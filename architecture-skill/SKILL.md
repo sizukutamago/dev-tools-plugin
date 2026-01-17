@@ -1,0 +1,168 @@
+---
+name: architecture-skill
+description: |
+  Designs system architecture, security controls, infrastructure, and caching 
+  strategies. Creates Architecture Decision Records (ADRs) for technical choices.
+  Use when designing system structure, making technology selections, planning 
+  security measures, defining caching layers, or documenting infrastructure.
+context: fork
+allowed-tools: Read, Write, Glob, Grep
+---
+
+# Architecture Skill
+
+システムアーキテクチャ・セキュリティ・インフラ・キャッシュを設計するスキル。
+システム構成設計、技術選定、セキュリティ対策、キャッシュレイヤー定義、
+インフラ構成の文書化に使用する。技術選定はADRとして記録する。
+
+## 前提条件
+
+| 条件 | 必須 | 説明 |
+|------|------|------|
+| docs/02_requirements/non_functional_requirements.md | ○ | NFR（パフォーマンス要件等） |
+| docs/02_requirements/functional_requirements.md | △ | 機能規模の把握 |
+
+## 出力ファイル
+
+| ファイル | テンプレート | 説明 |
+|---------|-------------|------|
+| docs/03_architecture/architecture.md | {baseDir}/templates/architecture.md | システム構成 |
+| docs/03_architecture/adr.md | {baseDir}/templates/adr.md | 技術選定記録 |
+| docs/03_architecture/security.md | {baseDir}/templates/security.md | セキュリティ設計 |
+| docs/03_architecture/infrastructure.md | {baseDir}/templates/infrastructure.md | インフラ構成 |
+| docs/03_architecture/cache_strategy.md | {baseDir}/templates/cache_strategy.md | キャッシュ戦略 |
+
+## 依存関係
+
+| 種別 | 対象 |
+|------|------|
+| 前提スキル | requirements-skill |
+| 後続スキル | implementation-skill |
+
+## ADR ID採番ルール
+
+| 項目 | ルール |
+|------|--------|
+| 形式 | ADR-XXXX（4桁ゼロパディング） |
+| 開始 | 0001 |
+
+## ワークフロー
+
+```
+1. 非機能要件・技術制約を読み込み
+2. アーキテクチャパターンを選定
+3. 技術スタックを決定（ADRとして記録）
+4. システム構成図を作成（Mermaid）
+5. セキュリティ設計
+6. キャッシュ戦略設計
+7. インフラ設計
+```
+
+## アーキテクチャパターン
+
+| タイプ | パターン |
+|--------|---------|
+| webapp | SPA + BFF |
+| mobile | Client-Server |
+| api | Microservices / Modular Monolith |
+| batch | Event-Driven |
+
+## ADRテンプレート
+
+```markdown
+### ADR-0001: [タイトル]
+
+#### コンテキスト
+[背景・課題]
+
+#### 決定
+[決定内容]
+
+#### 理由
+[決定理由]
+
+#### 代替案
+| 代替案 | 却下理由 |
+|--------|----------|
+
+#### 影響
+[影響・トレードオフ]
+```
+
+## セキュリティ設計
+
+### 認証
+
+| 項目 | 推奨 |
+|------|------|
+| 方式 | JWT (RS256) |
+| アクセストークン | 15分 |
+| リフレッシュトークン | 7日 |
+
+### 脆弱性対策
+
+| 脅威 | 対策 |
+|------|------|
+| XSS | CSP, サニタイズ |
+| CSRF | SameSite Cookie |
+| SQL Injection | パラメータ化クエリ |
+
+## キャッシュ戦略設計
+
+### レイヤー別キャッシュ
+
+| レイヤー | 技術 | 用途 |
+|---------|------|------|
+| ブラウザ | Cache-Control, ETag | 静的アセット |
+| CDN | CloudFront, Cloudflare | 静的ファイル、API応答 |
+| アプリケーション | Redis, Memcached | セッション、APIレスポンス |
+| データベース | クエリキャッシュ | 頻繁なクエリ結果 |
+
+### キャッシュ無効化戦略
+
+| 戦略 | 用途 |
+|------|------|
+| TTL（時間ベース） | 定期更新データ |
+| イベント駆動 | データ変更時の即時反映 |
+| バージョニング | 静的アセットの更新 |
+
+## インフラ設計
+
+| 項目 | 目標 |
+|------|------|
+| 稼働率 | 99.9% |
+| RTO | 1時間 |
+| RPO | 5分 |
+
+## コンテキスト更新
+
+```yaml
+phases:
+  architecture:
+    status: completed
+    files:
+      - docs/03_architecture/architecture.md
+      - docs/03_architecture/adr.md
+      - docs/03_architecture/security.md
+      - docs/03_architecture/infrastructure.md
+      - docs/03_architecture/cache_strategy.md
+id_registry:
+  adr: [ADR-0001, ADR-0002, ...]
+```
+
+## エラーハンドリング
+
+| エラー | 対応 |
+|--------|------|
+| NFR 不在 | デフォルト推奨値で設計、WARNING を記録 |
+| 技術スタック未定義 | ヒアリング結果から推測、ADR で記録 |
+| 矛盾するNFR | トレードオフを ADR に記録 |
+
+## 変更履歴
+
+| バージョン | 変更内容 |
+|-----------|----------|
+| 2.2.0 | 公式仕様準拠（description修正、allowed-tools追加、{baseDir}活用） |
+| 2.1.0 | 前提条件・エラーハンドリング追加 |
+| 2.0.0 | キャッシュ戦略追加、出力ディレクトリ変更 |
+| 1.0.0 | 初版 |

@@ -1,0 +1,107 @@
+# Project Context Schema
+# 各エージェント間で共有するプロジェクト状態
+# 使用方法: 初回実行時にこのファイルを docs/project-context.yaml にコピー
+
+# プロジェクト基本情報
+project:
+  name: "{{PROJECT_NAME}}"
+  type: webapp | mobile | api | batch | fullstack
+  description: "{{PROJECT_DESCRIPTION}}"
+  created_at: "{{CREATED_AT}}"
+  updated_at: "{{UPDATED_AT}}"
+
+# フェーズ状態（論理的な順序）
+phases:
+  # Phase 1: ヒアリング
+  hearing:
+    status: pending | in_progress | completed
+    files: []
+    output_dir: 01_hearing
+
+  # Phase 2: 要件定義
+  requirements:
+    status: pending | in_progress | review | approved | completed
+    files: []
+    output_dir: 02_requirements
+
+  # Phase 3: アーキテクチャ（技術方針を先に決定）
+  architecture:
+    status: pending | in_progress | completed
+    files: []
+    output_dir: 03_architecture
+
+  # Phase 4: データ構造（エンティティ定義、APIの基盤）
+  database:
+    status: pending | in_progress | completed
+    files: []
+    output_dir: 04_data_structure
+
+  # Phase 5: API設計（エンティティを使用）
+  api:
+    status: pending | in_progress | completed
+    files: []
+    output_dir: 05_api_design
+
+  # Phase 6: 画面設計（APIを使用）
+  design:
+    status: pending | in_progress | completed
+    files: []
+    output_dir: 06_screen_design
+
+  # Phase 7: 実装準備
+  implementation:
+    status: pending | in_progress | completed
+    files: []
+    output_dir: 07_implementation
+
+  # Phase 8: レビュー
+  review:
+    status: pending | in_progress | completed
+    files: []
+    output_dir: 08_review
+    result:
+      overall: PASS | WARNING | BLOCKER
+      blockers: 0
+      warnings: 0
+
+# ID採番管理
+id_registry:
+  fr:
+    next: 1
+    allocated: []
+  nfr:
+    next: 1
+    allocated: []
+  sc:
+    next: 1
+    allocated: []
+  api:
+    next: 1
+    allocated: []
+  ent:
+    allocated: []
+  adr:
+    next: 1
+    allocated: []
+
+# トレーサビリティマップ
+# 依存方向: FR → ENT → API → SC
+traceability:
+  # FR → SC: 機能要件から画面へ
+  fr_to_sc: {}
+  # FR → API: 機能要件からAPIへ
+  fr_to_api: {}
+  # FR → ENT: 機能要件からエンティティへ
+  fr_to_ent: {}
+  # API → ENT: APIからエンティティへ（APIが使用するエンティティ）
+  api_to_ent: {}
+  # API → SC: APIから画面へ（APIを使用する画面）
+  api_to_sc: {}
+
+# 用語集
+glossary: []
+
+# メタデータ
+metadata:
+  version: "2.1.0"
+  schema_version: "2.1"
