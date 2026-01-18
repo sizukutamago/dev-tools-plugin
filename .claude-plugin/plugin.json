@@ -1,0 +1,9 @@
+{
+  "name": "ai-skills",
+  "version": "1.0.0",
+  "description": "設計書作成ワークフロースキルとエージェント集。8フェーズの設計プロセスを自動化",
+  "author": {
+    "name": "sizukutamago"
+  },
+  "keywords": ["design-docs", "requirements", "architecture", "workflow", "japanese"]
+}
