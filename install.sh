@@ -2,7 +2,11 @@
 # install.sh - ai-skills を ~/.claude/ にインストール
 #
 # 使用方法:
-#   ./install.sh
+#   ./install.sh [オプション]
+#
+# オプション:
+#   --skip-design-docs    design-doc系のスキル/エージェントをスキップ
+#   -h, --help            ヘルプを表示
 #
 # 動作:
 #   - agents/, commands/, skills/ を ~/.claude/ 以下にコピー
@@ -17,10 +21,68 @@ GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 NC='\033[0m' # No Color
 
+# デフォルト値
+SKIP_DESIGN_DOCS=false
+
+# ヘルプ表示
+show_help() {
+    cat << EOF
+使用方法: ./install.sh [オプション]
+
+オプション:
+  --skip-design-docs    design-docワークフロー関連をスキップ
+                        (hearing, requirements, architecture, design*,
+                         database, api, implementation, shared)
+  -h, --help            このヘルプを表示
+
+例:
+  ./install.sh                     # 全てインストール
+  ./install.sh --skip-design-docs  # design-docワークフロー関連を除外
+EOF
+    exit 0
+}
+
+# 引数パース
+while [[ $# -gt 0 ]]; do
+    case $1 in
+        --skip-design-docs)
+            SKIP_DESIGN_DOCS=true
+            shift
+            ;;
+        -h|--help)
+            show_help
+            ;;
+        *)
+            echo -e "${RED}不明なオプション: $1${NC}"
+            echo "ヘルプ: ./install.sh --help"
+            exit 1
+            ;;
+    esac
+done
+
 # スクリプトのディレクトリを取得
 SOURCE_DIR="$(cd "$(dirname "$0")" && pwd)"
 TARGET_DIR="$HOME/.claude"
 DIRS=("agents" "commands" "skills")
+
+# rsync除外オプションを構築
+EXCLUDE_OPTS=()
+DESIGN_DOC_EXCLUDES=(
+    "hearing*"
+    "requirements*"
+    "architecture*"
+    "design*"
+    "database*"
+    "api*"
+    "implementation*"
+    "shared*"
+)
+
+if [[ "$SKIP_DESIGN_DOCS" == true ]]; then
+    for pattern in "${DESIGN_DOC_EXCLUDES[@]}"; do
+        EXCLUDE_OPTS+=("--exclude=$pattern")
+    done
+fi
 
 echo "=========================================="
 echo "  ai-skills インストーラー"
@@ -28,6 +90,10 @@ echo "=========================================="
 echo ""
 echo "ソース: $SOURCE_DIR"
 echo "ターゲット: $TARGET_DIR"
+if [[ "$SKIP_DESIGN_DOCS" == true ]]; then
+    echo -e "${YELLOW}除外: design-docワークフロー関連${NC}"
+    echo "  (hearing, requirements, architecture, design*, database, api, implementation, shared)"
+fi
 echo ""
 
 # ターゲットディレクトリが存在しない場合は作成
@@ -53,7 +119,7 @@ for dir in "${DIRS[@]}"; do
     # -v: 詳細出力
     # --progress: 進捗表示
     # 末尾の /: ディレクトリ内容をコピー
-    rsync -av --progress "$source_path/" "$target_path/"
+    rsync -av --progress "${EXCLUDE_OPTS[@]}" "$source_path/" "$target_path/"
 
     echo ""
 done
