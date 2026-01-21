@@ -23,6 +23,7 @@ NC='\033[0m' # No Color
 
 # デフォルト値
 SKIP_DESIGN_DOCS=false
+TARGET_DIR="$HOME/.claude"
 
 # ヘルプ表示
 show_help() {
@@ -30,14 +31,18 @@ show_help() {
 使用方法: ./install.sh [オプション]
 
 オプション:
+  -t, --target <dir>    インストール先ディレクトリを指定
+                        (デフォルト: ~/.claude)
   --skip-design-docs    design-docワークフロー関連をスキップ
                         (hearing, requirements, architecture, design*,
                          database, api, implementation, shared)
   -h, --help            このヘルプを表示
 
 例:
-  ./install.sh                     # 全てインストール
-  ./install.sh --skip-design-docs  # design-docワークフロー関連を除外
+  ./install.sh                          # ~/.claude にインストール
+  ./install.sh -t ~/my-claude           # ~/my-claude にインストール
+  ./install.sh --skip-design-docs       # design-doc関連を除外
+  ./install.sh -t /tmp/test --skip-design-docs
 EOF
     exit 0
 }
@@ -45,6 +50,10 @@ EOF
 # 引数パース
 while [[ $# -gt 0 ]]; do
     case $1 in
+        -t|--target)
+            TARGET_DIR="$2"
+            shift 2
+            ;;
         --skip-design-docs)
             SKIP_DESIGN_DOCS=true
             shift
@@ -62,7 +71,6 @@ done
 
 # スクリプトのディレクトリを取得
 SOURCE_DIR="$(cd "$(dirname "$0")" && pwd)"
-TARGET_DIR="$HOME/.claude"
 DIRS=("agents" "commands" "skills")
 
 # rsync除外オプションを構築
