@@ -127,7 +127,7 @@ for dir in "${DIRS[@]}"; do
     # -v: 詳細出力
     # --progress: 進捗表示
     # 末尾の /: ディレクトリ内容をコピー
-    rsync -av --progress "${EXCLUDE_OPTS[@]}" "$source_path/" "$target_path/"
+    rsync -av --progress ${EXCLUDE_OPTS[@]+"${EXCLUDE_OPTS[@]}"} "$source_path/" "$target_path/"
 
     echo ""
 done
