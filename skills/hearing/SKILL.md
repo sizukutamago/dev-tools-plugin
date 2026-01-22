@@ -2,6 +2,7 @@
 name: hearing
 description: This skill should be used when the user asks to "gather project requirements", "conduct requirements interview", "analyze existing codebase", "create project overview", "reverse engineer codebase", or "start new project documentation". Supports both new project interviews and reverse-engineering of existing codebases.
 version: 1.0.0
+agent: Plan
 ---
 
 # Hearing Skill
@@ -74,9 +75,22 @@ version: 1.0.0
 
 ## ヒアリングのコツ
 
-- 一度に1-2個の質問に絞る
-- 具体例を提示して選択しやすくする
-- ユーザーが答えやすい形式で質問
+### 構造化質問プロセス
+
+`commands/dig.md` の方法論に従う:
+
+1. **Clarify**: 曖昧点を特定
+2. **Ask**: AskUserQuestion で構造化質問（2-4問、各2-4選択肢）
+3. **Process**: 決定をテーブル形式で記録
+4. **Show**: サマリーを提示、新たな曖昧点があればPhase 2へ
+
+詳細は `commands/dig.md` を参照。
+
+### 調査ツール
+
+技術選択や不明点がある場合、質問前に調査:
+- **WebSearch**: ベストプラクティス、ライブラリ比較
+- **Context7 MCP**: 公式ドキュメント参照（利用可能な場合）
 
 ## エラーハンドリング
 

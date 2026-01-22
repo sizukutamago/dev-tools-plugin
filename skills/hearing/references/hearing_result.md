@@ -45,6 +45,12 @@
 | 予算 | {{BUDGET}} |
 | リリース希望日 | {{RELEASE_DATE}} |
 
+## 決定事項
+
+| 項目 | 選択 | 理由 | 備考 |
+|------|------|------|------|
+| {{DECISION_ITEM}} | {{DECISION_CHOICE}} | {{DECISION_REASON}} | {{DECISION_NOTES}} |
+
 ## 特記事項
 
 {{SPECIAL_NOTES}}
