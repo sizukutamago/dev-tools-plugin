@@ -12,6 +12,19 @@ coverage:
 
 # 画面一覧
 
+## 設計スコープ
+
+### Goals
+
+- {{GOAL_1}}
+- {{GOAL_2}}
+- {{GOAL_3}}
+
+### Non-Goals
+
+- {{NON_GOAL_1}}
+- {{NON_GOAL_2}}
+
 ## ID採番ルール
 
 | 項目 | ルール |

@@ -15,12 +15,14 @@ version: 1.0.0
 
 | Phase | Agent | Skill | 出力ディレクトリ | 出力ファイル |
 |-------|-------|-------|-----------------|-------------|
+| 0a | research | research | 00_analysis/ | research.md（既存プロジェクト拡張時） |
+| 0b | gap-analysis | gap-analysis | 00_analysis/ | gap_analysis.md（既存プロジェクト拡張時） |
 | 1 | hearing | hearing | 01_hearing/ | project_overview.md, hearing_result.md, glossary.md |
 | 2 | requirements | requirements | 02_requirements/ | requirements.md, functional_requirements.md, non_functional_requirements.md |
 | 3 | architecture | architecture | 03_architecture/ | architecture.md, adr.md, security.md, infrastructure.md, cache_strategy.md |
 | 4 | database | database | 04_data_structure/ | data_structure.md |
 | 5 | api | api | 05_api_design/ | api_design.md, integration.md |
-| 6 | design | design | 06_screen_design/ | screen_list.md, screen_transition.md, component_catalog.md, details/screen_detail_SC-XXX.md |
+| 6 | design | design | 06_screen_design/ | screen_list.md, screen_transition.md, component_catalog.md, error_patterns.md, ui_testing_strategy.md, details/screen_detail_SC-XXX.md |
 | 7 | implementation | implementation | 07_implementation/ | coding_standards.md, environment.md, testing.md, operations.md |
 | 8 | review | review | 08_review/ | consistency_check.md, review_template.md, project_completion.md |
 
@@ -28,6 +30,7 @@ version: 1.0.0
 
 | Phase | 名前 | 理由 |
 |-------|------|------|
+| 0 | 分析（オプション） | 既存プロジェクト拡張時の技術調査・ギャップ分析 |
 | 1 | ヒアリング | 要件を聞く |
 | 2 | 要件定義 | 機能・非機能要件をまとめる |
 | 3 | アーキテクチャ | 技術スタック・全体方針を先に決定 |
@@ -36,6 +39,37 @@ version: 1.0.0
 | 6 | 画面設計 | APIを使って画面を設計 |
 | 7 | 実装準備 | コーディング規約、テスト設計 |
 | 8 | レビュー | 整合性チェック |
+
+## ユースケース別フロー
+
+### 新規プロジェクト（デフォルト）
+
+```
+hearing → requirements → architecture → database → api → design → implementation → review
+```
+
+全フェーズを順次実行。Phase 2 完了後にユーザー承認必須。
+
+### 既存プロジェクト機能追加
+
+```
+research → gap-analysis → requirements(修正) → (必要なフェーズのみ) → review
+```
+
+1. **research**: 技術スタック・外部依存の調査
+2. **gap-analysis**: 既存コードベースと要件のギャップ分析
+3. **requirements**: 変更・追加要件の定義
+4. 以降、影響範囲に応じて必要なフェーズのみ実行
+
+### 既存コード解析（リバースエンジニアリング）
+
+```
+hearing(リバースエンジニアリング) → research → requirements → ...通常フロー
+```
+
+1. **hearing**: ソースコード分析モードで実行
+2. **research**: 技術スタックの詳細調査
+3. 以降、通常フローに合流
 
 ## ワークフロー
 
@@ -106,6 +140,9 @@ Claudeはタスク内容と各エージェントの `description` を照合し�
 
 ```
 docs/
+├── 00_analysis/          # オプション（既存プロジェクト拡張時）
+│   ├── research.md
+│   └── gap_analysis.md
 ├── 01_hearing/
 │   ├── project_overview.md
 │   ├── hearing_result.md
@@ -129,6 +166,8 @@ docs/
 │   ├── screen_list.md
 │   ├── screen_transition.md
 │   ├── component_catalog.md
+│   ├── error_patterns.md
+│   ├── ui_testing_strategy.md
 │   └── details/
 │       └── screen_detail_SC-XXX.md
 ├── 07_implementation/
@@ -222,14 +261,33 @@ BLOCKER 検出
 
 ## 依存関係
 
+### 新規プロジェクト
+
 ```mermaid
 graph TD
     P1[Phase 1: hearing] --> P2[Phase 2: requirements]
     P2 --> P3[Phase 3: architecture]
     P2 --> P4[Phase 4: database]
     P4 --> P5[Phase 5: api]
+    P3 --> P6[Phase 6: design]
     P3 --> P7[Phase 7: implementation]
-    P5 --> P6[Phase 6: design]
+    P5 --> P6
+    P6 --> P8[Phase 8: review]
+    P7 --> P8
+```
+
+### 既存プロジェクト拡張
+
+```mermaid
+graph TD
+    P0a[Phase 0a: research] --> P0b[Phase 0b: gap-analysis]
+    P0b --> P2[Phase 2: requirements]
+    P2 --> P3[Phase 3: architecture]
+    P2 --> P4[Phase 4: database]
+    P4 --> P5[Phase 5: api]
+    P3 --> P6[Phase 6: design]
+    P3 --> P7[Phase 7: implementation]
+    P5 --> P6
     P6 --> P8[Phase 8: review]
     P7 --> P8
 ```

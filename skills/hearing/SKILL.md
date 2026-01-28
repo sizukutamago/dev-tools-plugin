@@ -1,8 +1,7 @@
 ---
 name: hearing
 description: This skill should be used when the user asks to "gather project requirements", "conduct requirements interview", "analyze existing codebase", "create project overview", "reverse engineer codebase", or "start new project documentation". Supports both new project interviews and reverse-engineering of existing codebases.
-version: 1.0.0
-agent: Plan
+version: 2.0.0
 ---
 
 # Hearing Skill
@@ -32,31 +31,77 @@ agent: Plan
 |------|------|
 | 前提スキル | なし（最初のフェーズ） |
 | 後続スキル | requirements |
+| 連携スキル | research（技術調査時） |
 
 ## ワークフロー
 
-### 新規プロジェクトの場合
+### Phase 0: EnterPlanMode
+
+**必須**: スキル起動直後に実行
 
 ```
-1. プロジェクトタイプを確認
-   - webapp / mobile / api / batch / fullstack
-
-2. 以下を順次ヒアリング（質問は最小限に）
-   a. システム概要・目的
-   b. 必須機能（3-5個程度）
-   c. 追加機能（優先度付き）
-   d. 主要な非機能要件
-   e. 利用者情報
-   f. 制約条件
-
-3. ヒアリング結果をまとめる
-
-4. 用語を抽出してglossary生成
-
-5. プロジェクト概要を生成
+1. EnterPlanMode ツールを呼び出す
+2. 計画モードでヒアリングを実施
+3. 決定事項を計画ファイルに記録
 ```
 
-### リバースエンジニアリングの場合
+### Phase 1: Initial Context
+
+プロジェクトの基本情報を収集:
+
+1. **AskUserQuestion** でプロジェクトタイプを確認
+2. システム概要を自由記述で収集
+
+### Phase 2: Deep Dive
+
+以下のカテゴリについて **AskUserQuestion** で深掘り:
+
+| カテゴリ | 質問数目安 | 必須 |
+|---------|-----------|------|
+| Goals/Non-Goals | 2-3問 | ○ |
+| 機能スコープ | 2-4問 | ○ |
+| 非機能要件 | 1-2問 | ○ |
+| 技術制約 | 1-2問 | △ |
+| 利用者情報 | 1問 | ○ |
+
+**重要**: 曖昧な回答があれば、追加質問で深掘りする
+
+### Phase 3: Research（必要時）
+
+**軽微な調査**:
+- WebSearch でベストプラクティスを調査
+- 調査結果を次の質問の選択肢に反映
+
+**本格的な技術調査が必要な場合**:
+- research スキルを呼び出し
+- 調査結果を AskUserQuestion の選択肢に反映
+
+### Phase 4: Decision Recording
+
+全ての決定をテーブル形式で記録:
+
+| 項目 | 選択 | 理由 | 備考 |
+|------|------|------|------|
+
+曖昧点があれば Phase 2 に戻る
+
+### Phase 5: ExitPlanMode
+
+**必須**: ユーザー承認を得る
+
+1. ExitPlanMode ツールを呼び出す
+2. ユーザーが計画を承認するまで待機
+
+### Phase 6: Output Generation
+
+承認後に実行:
+
+1. hearing_result.md を生成
+2. project_overview.md を生成
+3. glossary.md を生成
+4. project-context.yaml を更新
+
+## リバースエンジニアリングの場合
 
 ```
 1. ソースコード構造を分析
@@ -73,24 +118,64 @@ agent: Plan
 3. 分析結果をhearing_result形式でまとめる
 ```
 
-## ヒアリングのコツ
+## ツール使用ルール
 
-### 構造化質問プロセス
+### EnterPlanMode / ExitPlanMode
 
-`commands/dig.md` の方法論に従う:
+- 起動直後に EnterPlanMode 必須
+- ExitPlanMode 前に成果物を生成しない
+- ユーザー承認なしに次フェーズに進まない
 
-1. **Clarify**: 曖昧点を特定
-2. **Ask**: AskUserQuestion で構造化質問（2-4問、各2-4選択肢）
-3. **Process**: 決定をテーブル形式で記録
-4. **Show**: サマリーを提示、新たな曖昧点があればPhase 2へ
+### AskUserQuestion
 
-詳細は `commands/dig.md` を参照。
+- 全ての重要決定に使用必須
+- 各質問は 2-4 個の選択肢
+- 各選択肢に pros/cons を含める
+- 曖昧な回答は追加質問で深掘り
 
-### 調査ツール
+### research スキル連携
 
-技術選択や不明点がある場合、質問前に調査:
-- **WebSearch**: ベストプラクティス、ライブラリ比較
-- **Context7 MCP**: 公式ドキュメント参照（利用可能な場合）
+| 状況 | アクション |
+|------|----------|
+| 技術選定が必要 | research スキルを呼び出し |
+| 外部サービス比較が必要 | research スキルを呼び出し |
+| 軽微な調査 | WebSearch で直接調査 |
+
+## 質問テンプレート
+
+### プロジェクトタイプ
+
+| 選択肢 | 説明 |
+|--------|------|
+| webapp | ブラウザで動作するWebアプリケーション |
+| mobile | iOS/Androidネイティブまたはハイブリッドアプリ |
+| api | バックエンドAPI、マイクロサービス |
+| batch | 定期実行処理、データ処理パイプライン |
+| fullstack | フロントエンド + バックエンド一体型 |
+
+### リリース範囲
+
+| 選択肢 | 説明 |
+|--------|------|
+| MVP最小限 | コア機能1-2個のみ、素早くリリースして検証 |
+| 標準セット | 主要機能を網羅、一般的なリリース規模 |
+| フル機能 | 想定機能をすべて含む、大規模リリース |
+
+### 非機能優先度
+
+| 選択肢 | 説明 |
+|--------|------|
+| パフォーマンス | 応答速度、処理能力を最優先 |
+| セキュリティ | 認証・認可、データ保護を最優先 |
+| 可用性 | 稼働率、障害対応を最優先 |
+| 保守性 | コード品質、拡張性を最優先 |
+
+## Goals/Non-Goals 定義ガイド
+
+| 種別 | 定義 | 例 |
+|------|------|-----|
+| Goals | 達成すべきビジネス/ユーザー目標 | 「注文完了率90%以上」「モバイル対応」 |
+| Non-Goals | 明示的に除外する機能・範囲 | 「管理画面」「多言語対応」「オフライン機能」 |
 
 ## エラーハンドリング
 

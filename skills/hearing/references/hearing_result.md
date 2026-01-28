@@ -8,6 +8,31 @@
 
 {{SYSTEM_OVERVIEW}}
 
+## Goals（目標）
+
+このプロジェクトで達成すべき主要目標:
+
+- {{GOAL_1}}
+- {{GOAL_2}}
+- {{GOAL_3}}
+
+### 成功の定義
+
+{{SUCCESS_DEFINITION}}
+
+## Non-Goals（対象外）
+
+今回のスコープ外とするもの:
+
+- {{NON_GOAL_1}}
+- {{NON_GOAL_2}}
+
+### 将来フェーズへの先送り事項
+
+| 項目 | 理由 | 想定フェーズ |
+|------|------|-------------|
+| {{DEFERRED_ITEM}} | {{DEFER_REASON}} | {{TARGET_PHASE}} |
+
 ## 機能要件
 
 ### 必須機能
@@ -47,9 +72,32 @@
 
 ## 決定事項
 
-| 項目 | 選択 | 理由 | 備考 |
-|------|------|------|------|
-| {{DECISION_ITEM}} | {{DECISION_CHOICE}} | {{DECISION_REASON}} | {{DECISION_NOTES}} |
+ヒアリングで確定した事項。requirements スキルへの引き継ぎ情報。
+
+### プロジェクト基本
+
+| 項目 | 選択 | 理由 |
+|------|------|------|
+| プロジェクトタイプ | {{PROJECT_TYPE}} | {{REASON}} |
+| 初期リリース範囲 | {{INITIAL_SCOPE}} | {{REASON}} |
+
+### 機能スコープ
+
+| 機能 | 優先度 | 含める/除外 | 理由 |
+|------|--------|------------|------|
+| {{FEATURE}} | Must/Should/Could/Won't | {{INCLUDE_EXCLUDE}} | {{REASON}} |
+
+### 技術選定（暫定）
+
+| カテゴリ | 選定 | 理由 | 代替案 |
+|---------|------|------|--------|
+| {{TECH_CATEGORY}} | {{SELECTION}} | {{REASON}} | {{ALTERNATIVES}} |
+
+### 未決定事項
+
+| 項目 | 理由 | 決定予定フェーズ |
+|------|------|----------------|
+| {{PENDING_ITEM}} | {{REASON}} | architecture/design/実装時 |
 
 ## 特記事項
 

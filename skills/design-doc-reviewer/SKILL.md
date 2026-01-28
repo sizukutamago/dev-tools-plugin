@@ -64,6 +64,9 @@ version: 1.0.0
 | 孤児ID無し |
 | 参照先存在 |
 | 用語統一（glossary準拠） |
+| Goals/Non-Goals と FR の整合性 |
+| エラーパターンと architecture の整合性 |
+| テスト戦略と implementation の整合性 |
 
 ### Level 3: 完全性チェック
 
@@ -73,6 +76,40 @@ version: 1.0.0
 | 必須項目が全て記入済 |
 | 詳細仕様が記載されている |
 | 受入基準が検証可能 |
+| **画面詳細ファイル完全性** |
+
+### Level 4: 出力ファイル完全性チェック
+
+全フェーズの必須出力ファイルが存在するかをチェックする。
+
+#### 必須ファイル一覧
+
+| フェーズ | 必須ファイル |
+|---------|-------------|
+| Phase 1: Hearing | `01_hearing/project_overview.md`, `hearing_result.md`, `glossary.md` |
+| Phase 2: Requirements | `02_requirements/requirements.md`, `functional_requirements.md`, `non_functional_requirements.md` |
+| Phase 3: Architecture | `03_architecture/architecture.md`, `adr.md`, `security.md`, `infrastructure.md` |
+| Phase 4: Database | `04_data_structure/data_structure.md` |
+| Phase 5: API | `05_api_design/api_design.md`, `integration.md` |
+| Phase 6: Design | `06_screen_design/screen_list.md`, `screen_transition.md`, `component_catalog.md`, `error_patterns.md`, `ui_testing_strategy.md`, `details/screen_detail_SC-XXX.md` (全SC-ID分) |
+| Phase 7: Implementation | `07_implementation/coding_standards.md`, `environment.md`, `testing.md`, `operations.md` |
+| Phase 8: Review | `08_review/consistency_check.md`, `project_completion.md` |
+
+#### 画面詳細ファイル完全性
+
+| チェック項目 | 説明 |
+|-------------|------|
+| 全SC-IDに対応するファイル存在 | screen_list.md内の全SC-IDに対してscreen_detail_SC-XXX.mdが存在 |
+| ファイル命名規則準拠 | `screen_detail_SC-XXX.md` 形式 |
+| 必須セクション存在 | 基本情報、画面レイアウト、コンポーネント構成、状態管理、ユーザー操作、API連携 |
+
+**検証手順**:
+```
+1. 各フェーズの必須ファイルが存在するか確認
+2. screen_list.md から全SC-IDを抽出
+3. details/ ディレクトリ内のファイルを列挙
+4. 不足ファイルを BLOCKER として報告
+```
 
 ## トレーサビリティチェック
 
@@ -92,7 +129,7 @@ version: 1.0.0
 
 | 分類 | 例 |
 |------|-----|
-| BLOCKER | 参照先不在、重複ID |
+| BLOCKER | 参照先不在、重複ID、**必須ファイル不足**、**画面詳細ファイル不足** |
 | WARNING | 孤児ID、プレースホルダー残存 |
 
 ## 修正サイクル
