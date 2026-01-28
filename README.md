@@ -22,6 +22,8 @@
 | web-design-guidelines | Web UI ガイドライン準拠チェック | "review my UI", "check accessibility" |
 | vercel-react-best-practices | React/Next.js パフォーマンス最適化 | "optimize React code", "improve Next.js performance" |
 | agent-browser | ブラウザ自動操作 | "test web page", "automate browser" |
+| biome | Linting/Formatting 設定 | "setup biome", "configure linter" |
+| dependency-cruiser | アーキテクチャ依存検証 | "setup dependency cruiser", "check architecture" |
 
 ## エージェント一覧
 
@@ -80,6 +82,21 @@ ai-skills/
 │   ├── vercel-react-best-practices/
 │   │   └── references/rules/
 │   ├── agent-browser/
+│   ├── biome/
+│   │   ├── SKILL.md
+│   │   ├── commands/
+│   │   │   └── setup-biome.md
+│   │   └── templates/
+│   │       └── biome.base.json
+│   ├── dependency-cruiser/
+│   │   ├── SKILL.md
+│   │   ├── commands/
+│   │   │   └── setup-depcruise.md
+│   │   └── templates/
+│   │       ├── .dependency-cruiser.base.js
+│   │       └── presets/
+│   │           ├── ddd.js
+│   │           └── frontend.js
 │   └── shared/
 │       └── references/
 ├── agents/
