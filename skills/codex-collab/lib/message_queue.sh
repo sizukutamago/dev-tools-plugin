@@ -172,7 +172,9 @@ list_pending() {
 # キュー内のメッセージ数を取得
 count_pending() {
     init_queue
-    grep -c '"status":"pending"' "$QUEUE_FILE" 2>/dev/null || echo "0"
+    local count
+    count=$(grep -c '"status":"pending"' "$QUEUE_FILE" 2>/dev/null) || count=0
+    echo "$count"
 }
 
 # 古い配信済みメッセージをクリーンアップ（24時間以上前）
