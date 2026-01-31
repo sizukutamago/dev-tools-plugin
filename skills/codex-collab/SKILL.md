@@ -1,7 +1,7 @@
 ---
 name: codex-collab
 description: Use when the user asks to "pair program with Codex", "get Codex review", "collaborate with Codex", "consult Codex on approach", "second opinion from Codex", "AI pair programming", or any development task that would benefit from a second AI perspective. Integrates with OpenAI Codex CLI (interactive mode in tmux pane) for AI pair programming. Enables Claude Code as primary implementer with Codex as consultant and code reviewer using tmux split-pane visualization. Consults Codex at ALL phases: requirements, design, implementation, and review. IMPORTANT: Never use "codex exec" - always use interactive Codex in tmux pane to avoid MCP server startup overhead.
-version: 2.0.5
+version: 2.1.0
 ---
 
 # Codex Collaboration
@@ -194,6 +194,85 @@ skills/codex-collab/
 |------|------|
 | `[CONSULT:CLAUDE:VERIFICATION]` | 実装方針の確認 |
 | `[CONSULT:CLAUDE:CONTEXT]` | 追加コンテキスト要求 |
+
+### Codex → Claude インタラクティブチャット（v2.1.0+）
+
+| タグ | 用途 |
+|------|------|
+| `[MESSAGE:CLAUDE:QUESTION]` | Codex が Claude に質問 |
+| `[MESSAGE:CLAUDE:SUGGESTION]` | Codex からの提案 |
+| `[MESSAGE:CLAUDE:ALERT]` | 問題検出の通知 |
+| `[CHAT:CODEX]` | 自由形式チャット |
+
+## Codex → Claude インタラクティブチャット
+
+v2.1.0 で追加された機能。Codex から Claude Code へリアルタイムにメッセージを送信できます。
+
+### 直接送信（推奨）
+
+Codex ペイン（Pane 1）から Claude にメッセージを即座に送信：
+
+```bash
+# エイリアスを使用（setup_pair_env.sh で自動設定）
+ask-claude "認証方式はどれを使うべき？"
+suggest-claude "ここにバリデーションを追加すべき"
+alert-claude "セキュリティリスクを発見しました"
+chat-claude "自由なメッセージ"
+
+# スクリプトを直接使用
+./scripts/send_to_claude.sh --type QUESTION "質問テキスト"
+./scripts/send_to_claude.sh --type SUGGESTION "提案テキスト"
+./scripts/send_to_claude.sh --type ALERT "警告テキスト"
+./scripts/send_to_claude.sh --file /tmp/detailed_question.txt --type QUESTION
+```
+
+### メッセージキュー方式（オプション）
+
+信頼性を重視する場合はキュー経由で送信：
+
+```bash
+# Claude 側で watcher 起動
+./scripts/collab.sh watch
+
+# Codex 側からキューに追加
+./scripts/send_to_claude.sh --queue --type QUESTION "質問内容"
+
+# 保留メッセージ確認
+./scripts/collab.sh check-messages
+
+# watcher 停止
+./scripts/collab.sh watch --stop
+```
+
+### collab.sh の新コマンド
+
+```bash
+# キュー監視
+./scripts/collab.sh watch          # 監視開始（バックグラウンド）
+./scripts/collab.sh watch --stop   # 監視停止
+./scripts/collab.sh watch --status # ステータス確認
+
+# 保留メッセージ確認
+./scripts/collab.sh check-messages
+
+# Claude に直接メッセージ送信
+./scripts/collab.sh message "メッセージテキスト" --type QUESTION
+```
+
+### メッセージ履歴
+
+双方向のメッセージ履歴はセッション状態に記録されます：
+
+```bash
+# メッセージ履歴追加
+./lib/session_state.sh add-message \
+  --direction codex_to_claude \
+  --type QUESTION \
+  --content "認証方式について質問"
+
+# メッセージ履歴取得
+./lib/session_state.sh get-messages
+```
 
 ## コアライブラリ (lib/)
 
@@ -532,6 +611,24 @@ codex exec --full-auto "レビューしてください"
 - macOS/Linux 両対応（flock 非依存）
 
 ## 変更履歴
+
+### v2.1.0 (2026-02-01)
+- **新機能: Codex → Claude インタラクティブチャット**
+  - `[MESSAGE:CLAUDE:QUESTION/SUGGESTION/ALERT]` タグ追加
+  - `[CHAT:CODEX]` 自由形式チャットタグ追加
+- **新規スクリプト追加**:
+  - `scripts/send_to_claude.sh`: 直接メッセージ送信
+  - `scripts/watch_for_codex_messages.sh`: キュー監視デーモン
+  - `lib/message_queue.sh`: ファイルベースのメッセージキュー
+- **collab.sh 拡張**:
+  - `watch`: キュー監視開始/停止
+  - `check-messages`: 保留メッセージ確認
+  - `message`: Claude に直接メッセージ送信
+- **setup_pair_env.sh 拡張**:
+  - Codex 用エイリアス自動設定 (`ask-claude`, `suggest-claude`, `alert-claude`, `chat-claude`)
+- **session_state.sh 拡張**:
+  - `bidirectional_messages` 配列で双方向メッセージ履歴追跡
+  - `add-message`, `get-messages` コマンド追加
 
 ### v2.0.5 (2026-01-31)
 - **SKILL.md 追加**: Plan モードでの Codex 相談セクションを追加

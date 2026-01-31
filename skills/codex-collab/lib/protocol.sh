@@ -21,7 +21,11 @@ readonly PATTERN_CONSULT='^\[CONSULT:(REQUIREMENTS|DESIGN|IMPLEMENTATION)\]$'
 readonly PATTERN_REQUEST='^\[REQUEST:(REVIEW)\]$'
 readonly PATTERN_RESPONSE='^\[RESPONSE:(REQUIREMENTS|DESIGN|IMPLEMENTATION|REVIEW)\]$'
 readonly PATTERN_CALLBACK='^\[CONSULT:CLAUDE:(VERIFICATION|CONTEXT)\]$'
-readonly PATTERN_ANY_MARKER='^\[(CONSULT|REQUEST|RESPONSE):[A-Z_:]+\]$'
+readonly PATTERN_ANY_MARKER='^\[(CONSULT|REQUEST|RESPONSE|MESSAGE|CHAT):[A-Z_:]+\]$'
+
+# Codex → Claude アクティブメッセージパターン
+readonly PATTERN_MESSAGE_TO_CLAUDE='^\[MESSAGE:CLAUDE:(QUESTION|SUGGESTION|ALERT)\]$'
+readonly PATTERN_CHAT_CODEX='^\[CHAT:CODEX\]$'
 
 # メッセージタイプを検出
 # 引数: ファイルパス
@@ -48,6 +52,19 @@ detect_type() {
     if [[ $first_line =~ $PATTERN_CALLBACK ]]; then
         local callback_type="${BASH_REMATCH[1]}"
         echo "TYPE=CALLBACK KIND=$callback_type"
+        return $EXIT_OK
+    fi
+
+    # MESSAGE:CLAUDE 判定（Codex → Claude アクティブメッセージ）
+    if [[ $first_line =~ $PATTERN_MESSAGE_TO_CLAUDE ]]; then
+        local message_type="${BASH_REMATCH[1]}"
+        echo "TYPE=MESSAGE KIND=$message_type"
+        return $EXIT_OK
+    fi
+
+    # CHAT:CODEX 判定（自由形式チャット）
+    if [[ $first_line =~ $PATTERN_CHAT_CODEX ]]; then
+        echo "TYPE=CHAT KIND=CODEX"
         return $EXIT_OK
     fi
 
@@ -198,7 +215,9 @@ extract_markers() {
         if [[ $line =~ $PATTERN_CONSULT ]] || \
            [[ $line =~ $PATTERN_REQUEST ]] || \
            [[ $line =~ $PATTERN_RESPONSE ]] || \
-           [[ $line =~ $PATTERN_CALLBACK ]]; then
+           [[ $line =~ $PATTERN_CALLBACK ]] || \
+           [[ $line =~ $PATTERN_MESSAGE_TO_CLAUDE ]] || \
+           [[ $line =~ $PATTERN_CHAT_CODEX ]]; then
             markers+=("\"$line\"")
         fi
     done < "$file"

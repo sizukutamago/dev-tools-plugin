@@ -51,6 +51,15 @@ Commands:
 
   interactive              インタラクティブモード開始
 
+  watch [--stop]           キュー監視デーモンの開始/停止
+    --status               監視ステータス確認
+    --stop                 監視停止
+
+  check-messages           保留中メッセージ一覧を表示
+
+  message <text>           Claude に直接メッセージ送信
+    --type TYPE            メッセージタイプ (QUESTION|SUGGESTION|ALERT|CHAT)
+
 Examples:
   # 新規セッション開始
   ./collab.sh init --feature "user-auth" --project "my-app"
@@ -405,6 +414,91 @@ cmd_interactive() {
     echo "Use the right pane to interact with Codex directly"
 }
 
+# キュー監視コマンド
+cmd_watch() {
+    local action="start"
+
+    while [[ $# -gt 0 ]]; do
+        case "$1" in
+            --stop)
+                action="stop"
+                shift
+                ;;
+            --status)
+                action="status"
+                shift
+                ;;
+            *)
+                error "Unknown option: $1"
+                return 1
+                ;;
+        esac
+    done
+
+    case "$action" in
+        start)
+            "${SCRIPT_DIR}/watch_for_codex_messages.sh" --daemon
+            ;;
+        stop)
+            "${SCRIPT_DIR}/watch_for_codex_messages.sh" --stop
+            ;;
+        status)
+            "${SCRIPT_DIR}/watch_for_codex_messages.sh" --status
+            ;;
+    esac
+}
+
+# 保留メッセージ確認
+cmd_check_messages() {
+    if [[ ! -f "${LIB_DIR}/message_queue.sh" ]]; then
+        error "message_queue.sh not found"
+        return 1
+    fi
+
+    source "${LIB_DIR}/message_queue.sh"
+
+    local count
+    count=$(count_pending)
+
+    if [[ "$count" -eq 0 ]]; then
+        info "No pending messages"
+    else
+        info "Pending messages: $count"
+        list_pending | jq .
+    fi
+}
+
+# Claude に直接メッセージ送信
+cmd_message() {
+    local message=""
+    local msg_type="CHAT"
+
+    while [[ $# -gt 0 ]]; do
+        case "$1" in
+            --type)
+                msg_type="$2"
+                shift 2
+                ;;
+            *)
+                if [[ -z "$message" ]]; then
+                    message="$1"
+                else
+                    message="$message $1"
+                fi
+                shift
+                ;;
+        esac
+    done
+
+    if [[ -z "$message" ]]; then
+        error "Message is required"
+        echo "Usage: collab.sh message \"your message\" --type TYPE"
+        return 1
+    fi
+
+    "${SCRIPT_DIR}/send_to_claude.sh" --type "$msg_type" "$message"
+}
+
 # メイン処理
 main() {
     local command="${1:-help}"
@@ -444,6 +538,15 @@ main() {
             ;;
         interactive)
             cmd_interactive
+            ;;
+        watch)
+            cmd_watch "$@"
+            ;;
+        check-messages)
+            cmd_check_messages
+            ;;
+        message)
+            cmd_message "$@"
             ;;
         help|--help|-h)
             show_help

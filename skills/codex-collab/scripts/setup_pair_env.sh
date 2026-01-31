@@ -57,6 +57,22 @@ tmux new-session -d -s "$SESSION_NAME" -n "pair" -c "$WORK_DIR" "claude"
 # Note: Codex は --full-auto で自動承認モード、--sandbox で安全な実行環境
 tmux split-window -h -t "$SESSION_NAME" -c "$WORK_DIR" "codex --full-auto"
 
+# 3.5 Codex ペインに Claude 送信用エイリアスを設定
+# エイリアス定義（Codex から Claude へ送信）
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+SEND_SCRIPT="${SCRIPT_DIR}/send_to_claude.sh"
+
+if [[ -f "$SEND_SCRIPT" ]]; then
+    # エイリアス設定を Codex ペインに送信（シェル起動後に反映）
+    sleep 1  # Codex 起動待ち
+    tmux send-keys -t "${SESSION_NAME}:0.1" "# Claude 送信エイリアス設定中..." Enter
+    tmux send-keys -t "${SESSION_NAME}:0.1" "alias ask-claude='${SEND_SCRIPT} --type QUESTION'" Enter
+    tmux send-keys -t "${SESSION_NAME}:0.1" "alias suggest-claude='${SEND_SCRIPT} --type SUGGESTION'" Enter
+    tmux send-keys -t "${SESSION_NAME}:0.1" "alias alert-claude='${SEND_SCRIPT} --type ALERT'" Enter
+    tmux send-keys -t "${SESSION_NAME}:0.1" "alias chat-claude='${SEND_SCRIPT}'" Enter
+    tmux send-keys -t "${SESSION_NAME}:0.1" "echo 'Claude 送信エイリアス設定完了: ask-claude, suggest-claude, alert-claude, chat-claude'" Enter
+fi
+
 # 4. 左ペイン（Claude）を選択
 tmux select-pane -t "$SESSION_NAME:0.0"
 

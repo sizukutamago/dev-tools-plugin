@@ -378,6 +378,105 @@ add_consultation() {
     echo "$consultation_id"
 }
 
+# 双方向メッセージを追加（Codex ↔ Claude）
+add_bidirectional_message() {
+    local session_id=""
+    local direction=""
+    local message_type=""
+    local content=""
+
+    while [[ $# -gt 0 ]]; do
+        case "$1" in
+            --session)
+                session_id="$2"
+                shift 2
+                ;;
+            --direction)
+                direction="$2"
+                shift 2
+                ;;
+            --type)
+                message_type="$2"
+                shift 2
+                ;;
+            --content)
+                content="$2"
+                shift 2
+                ;;
+            *)
+                echo "Unknown option: $1" >&2
+                return 1
+                ;;
+        esac
+    done
+
+    # バリデーション
+    if [[ ! "$direction" =~ ^(codex_to_claude|claude_to_codex)$ ]]; then
+        echo "Error: direction must be 'codex_to_claude' or 'claude_to_codex'" >&2
+        return 1
+    fi
+
+    if [[ -z "$message_type" ]]; then
+        message_type="CHAT"
+    fi
+
+    local session_dir
+    session_dir=$(get_session_dir "$session_id") || return 1
+
+    acquire_lock "$session_dir"
+    trap "release_lock '$session_dir'" EXIT
+
+    local state_file="${session_dir}/state.json"
+    local now
+    now=$(get_timestamp)
+
+    local msg_id
+    msg_id="msg-$(date +%s)-$RANDOM"
+
+    # bidirectional_messages 配列が存在しない場合は作成
+    local updated_json
+    updated_json=$(jq \
+        --arg now "$now" \
+        --arg id "$msg_id" \
+        --arg direction "$direction" \
+        --arg type "$message_type" \
+        --arg content "$content" \
+        '.updated_at = $now |
+         .bidirectional_messages = ((.bidirectional_messages // []) + [{
+             id: $id,
+             direction: $direction,
+             type: $type,
+             content: $content,
+             timestamp: $now,
+             status: "delivered"
+         }])' "$state_file")
+
+    local tmp_file="${state_file}.tmp"
+    echo "$updated_json" > "$tmp_file"
+    mv "$tmp_file" "$state_file"
+
+    echo "$msg_id"
+}
+
+# 双方向メッセージ履歴を取得
+get_bidirectional_messages() {
+    local session_id="${1:-}"
+    local limit="${2:-50}"
+
+    local session_dir
+    session_dir=$(get_session_dir "$session_id") || return 1
+
+    local state_file="${session_dir}/state.json"
+
+    if [[ ! -f "$state_file" ]]; then
+        echo "[]"
+        return 0
+    fi
+
+    jq --argjson limit "$limit" \
+        '(.bidirectional_messages // []) | .[-$limit:]' "$state_file"
+}
+
 # アクティブセッション一覧
 list_active() {
     if [[ ! -d "$SESSIONS_DIR" ]]; then
@@ -491,6 +590,15 @@ Commands:
     --prompt-file <path>         プロンプトファイル
     --response-file <path>       レスポンスファイル
 
+  add-message                    双方向メッセージを追加
+    --session <id>               セッション ID
+    --direction <dir>            方向 (codex_to_claude|claude_to_codex)
+    --type <type>                メッセージタイプ (QUESTION|SUGGESTION|ALERT|CHAT)
+    --content <text>             メッセージ内容
+
+  get-messages [session_id]      双方向メッセージ履歴を取得
+    [limit]                      取得件数（デフォルト: 50）
+
   list-active                    アクティブセッション一覧
 
   cleanup [--older-than <days>]  古いセッションをクリーンアップ
@@ -521,6 +629,12 @@ main() {
             ;;
         add-consultation)
             add_consultation "$@"
+            ;;
+        add-message)
+            add_bidirectional_message "$@"
+            ;;
+        get-messages)
+            get_bidirectional_messages "$@"
             ;;
         list-active)
             list_active
