@@ -79,13 +79,18 @@ check_prerequisites() {
         has_error=true
     fi
 
-    # OPENAI_API_KEY チェック
+    # Codex 認証チェック（OPENAI_API_KEY または codex login）
     if [[ -n "${OPENAI_API_KEY:-}" ]]; then
         local key_preview="${OPENAI_API_KEY:0:7}..."
         echo -e "  ${GREEN}✓${NC} OPENAI_API_KEY: $key_preview (設定済み)"
+    elif codex login status 2>&1 | grep -q "Logged in"; then
+        local login_status
+        login_status=$(codex login status 2>&1)
+        echo -e "  ${GREEN}✓${NC} Codex 認証: $login_status"
     else
-        echo -e "  ${RED}✗${NC} OPENAI_API_KEY が設定されていません"
-        echo -e "    ${YELLOW}設定: export OPENAI_API_KEY=\"sk-...\"${NC}"
+        echo -e "  ${RED}✗${NC} Codex 認証が設定されていません"
+        echo -e "    ${YELLOW}方法1: codex login で ChatGPT 認証${NC}"
+        echo -e "    ${YELLOW}方法2: export OPENAI_API_KEY=\"sk-...\"${NC}"
         has_error=true
     fi
 

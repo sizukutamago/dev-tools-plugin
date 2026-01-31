@@ -71,18 +71,21 @@ extract_section() {
     local content="$2"
 
     # セクションヘッダーの後から次のセクションヘッダーまたはファイル末尾まで抽出
-    # 対応パターン: "SECTION_NAME:", "## SECTION_NAME", "### SECTION_NAME", "**SECTION_NAME**:"
+    # 対応パターン: "## SECTION_NAME", "### SECTION_NAME", "SECTION_NAME:", "**SECTION_NAME**:"
+    # tolower() で case-insensitive マッチ
     echo "$content" | awk -v section="$section_name" '
-        BEGIN { found=0; output="" }
-        /^[#]*[ ]*'"$section_name"'[: ]/ || /^\*\*'"$section_name"'\*\*[: ]/ || /^'"$section_name"':/ {
-            found=1
-            # ヘッダー行をスキップして次の行から
-            getline
-            next
+        BEGIN { found=0; output=""; sec_lower=tolower(section) }
+        {
+            line_lower = tolower($0)
+            # パターンマッチ: "## SECTION", "**SECTION**", "SECTION:"
+            if (match(line_lower, "^##+ +" sec_lower) || match(line_lower, "^\\*\\*" sec_lower "s?\\*\\*") || match(line_lower, "^" sec_lower ":")) {
+                found=1
+                next
+            }
         }
-        found && /^[#]+[ ]+[A-Z_]+/ { found=0 }
-        found && /^\*\*[A-Z_]+\*\*:/ { found=0 }
-        found && /^[A-Z_]+:$/ { found=0 }
+        found && /^##+ +[A-Za-z]/ { found=0 }
+        found && /^\*\*[A-Za-z_]+\*\*/ { found=0 }
+        found && /^[A-Za-z_]+:$/ { found=0 }
         found { output = output $0 "\n" }
         END { print output }
     ' | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//' | head -c 10000
@@ -104,7 +107,9 @@ section_exists() {
     local section_name="$1"
     local content="$2"
 
-    if echo "$content" | grep -qiE "(^|\n)[#]*[ ]*$section_name[: ]|(^|\n)\*\*$section_name\*\*[: ]|(^|\n)$section_name:"; then
+    # パターン: "## SECTION_NAME", "### SECTION_NAME", "SECTION_NAME:", "**SECTION_NAME**"
+    # -i で case-insensitive マッチ
+    if echo "$content" | grep -qiE "^##+ +$section_name|^\*\*$section_name\*\*|^$section_name:"; then
         return 0
     else
         return 1
@@ -115,13 +120,14 @@ section_exists() {
 detect_response_type() {
     local content="$1"
 
-    if echo "$content" | grep -qE '\[RESPONSE:REQUIREMENTS\]|CLARIFICATION_QUESTIONS|CONSIDERATIONS'; then
+    # -i で case-insensitive マッチ
+    if echo "$content" | grep -qiE '\[RESPONSE:REQUIREMENTS\]|CLARIFICATION_QUESTIONS|CONSIDERATIONS'; then
         echo "REQUIREMENTS"
-    elif echo "$content" | grep -qE '\[RESPONSE:DESIGN\]|ASSESSMENT|RISKS|ALTERNATIVES|RECOMMENDATION'; then
+    elif echo "$content" | grep -qiE '\[RESPONSE:DESIGN\]|ASSESSMENT|RISKS|ALTERNATIVES|RECOMMENDATION'; then
         echo "DESIGN"
-    elif echo "$content" | grep -qE '\[RESPONSE:IMPLEMENTATION\]|ADVICE|PATTERNS|CAVEATS'; then
+    elif echo "$content" | grep -qiE '\[RESPONSE:IMPLEMENTATION\]|ADVICE|PATTERNS|CAVEATS'; then
         echo "IMPLEMENTATION"
-    elif echo "$content" | grep -qE '\[RESPONSE:REVIEW\]|STRENGTHS|ISSUES|SUGGESTIONS'; then
+    elif echo "$content" | grep -qiE '\[RESPONSE:REVIEW\]|STRENGTHS|ISSUES|SUGGESTIONS'; then
         echo "REVIEW"
     else
         echo "UNKNOWN"

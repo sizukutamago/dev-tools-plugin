@@ -1,17 +1,19 @@
 ---
 name: codex-collab
-description: Use when the user asks to "pair program with Codex", "get Codex review", "collaborate with Codex", "consult Codex on approach", "second opinion from Codex", "AI pair programming", or any development task that would benefit from a second AI perspective. Enables Claude Code as primary implementer with Codex as consultant and code reviewer using tmux split-pane visualization. Consults Codex at ALL phases: requirements, design, implementation, and review.
+description: Use when the user asks to "pair program with Codex", "get Codex review", "collaborate with Codex", "consult Codex on approach", "second opinion from Codex", "AI pair programming", or any development task that would benefit from a second AI perspective. Integrates with OpenAI Codex CLI (codex exec) for AI pair programming. Enables Claude Code as primary implementer with Codex as consultant and code reviewer using tmux split-pane visualization. Consults Codex at ALL phases: requirements, design, implementation, and review.
 version: 1.0.0
 ---
 
 # Codex Collaboration
 
-Claude Code と Codex による双方向ペアプログラミングスキル。
+Claude Code と **OpenAI Codex CLI** による双方向ペアプログラミングスキル。
 
 ## 概要
 
+このスキルは **OpenAI Codex CLI** (`codex exec` コマンド) と連携し、Claude Code と Codex が協調してペアプログラミングを行う。
+
 - **Claude Code**: 実装担当（主導）
-- **Codex**: アプローチ相談 + コードレビュー担当
+- **Codex CLI**: アプローチ相談 + コードレビュー担当（`codex exec` で非インタラクティブ通信）
 - **tmux**: 視覚的分離（左: Claude、右: Codex）
 - **相談タイミング**: 全フェーズ（要件分析、設計、実装、レビュー）
 
@@ -19,8 +21,8 @@ Claude Code と Codex による双方向ペアプログラミングスキル。
 
 | 条件 | 必須 | 説明 |
 |------|------|------|
-| `codex` CLI | ○ | `npm install -g @openai/codex` |
-| `OPENAI_API_KEY` | ○ | 環境変数に設定 |
+| `codex` CLI | ○ | `npm install -g @openai/codex` (OpenAI Codex CLI) |
+| Codex 認証 | ○ | `codex login` で ChatGPT 認証、または `OPENAI_API_KEY` 環境変数 |
 | `tmux` | ○ | `brew install tmux` / `apt install tmux` |
 | `git` | ○ | 差分生成用 |
 
