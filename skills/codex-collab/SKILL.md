@@ -149,11 +149,19 @@ tmux セッションの作成・管理・終了を行う。
 
 ```bash
 # 使用例
-./tmux_manager.sh start          # セッション開始、ペイン分割
+./tmux_manager.sh current        # 現在のセッション名を取得（推奨）
+./tmux_manager.sh get-or-create  # 現在のセッション取得または新規作成（冪等）
+./tmux_manager.sh start          # 新規セッション開始、ペイン分割
 ./tmux_manager.sh send $SESSION 1 "command"  # Codexペインにコマンド送信
 ./tmux_manager.sh capture $SESSION 1         # Codexペインの出力取得
 ./tmux_manager.sh stop $SESSION  # セッション終了
 ```
+
+**セッション取得の優先順位（get-or-create）:**
+1. 現在の tmux セッション（`$TMUX` が設定されている場合）← 最優先
+2. 指定されたセッション名
+3. 既存の `codex-collab-*` セッション（最新）
+4. 新規作成
 
 ### send_to_codex.sh
 
@@ -194,16 +202,30 @@ tmux なしで Codex を直接実行する。
 
 ## セッション開始手順
 
+### 現在の tmux セッションを使用（推奨）
+
 ```bash
 # 1. 前提条件確認
 which tmux && which codex && echo $OPENAI_API_KEY
 
-# 2. tmux セッション開始
+# 2. 現在の tmux セッションを取得（Claude Code が動作中のセッション）
+SESSION=$(./scripts/tmux_manager.sh current)
+echo "Session: $SESSION"  # → "pair-prog" など
+```
+
+### 冪等にセッション取得または作成
+
+```bash
+# 現在のセッション > 指定セッション > 新規作成 の優先順位
+SESSION=$(./scripts/tmux_manager.sh get-or-create)
+echo "Session: $SESSION"
+```
+
+### 新規セッションを強制作成
+
+```bash
 SESSION=$(./scripts/tmux_manager.sh start)
 echo "Session: $SESSION"
-
-# 3. セッションにアタッチ（別ターミナルで確認したい場合）
-tmux attach-session -t $SESSION
 ```
 
 ## エラーハンドリング
@@ -216,6 +238,37 @@ tmux attach-session -t $SESSION
 | 無効なレスポンス形式 | マーカー不在 | 再度構造化出力を依頼 |
 | API レート制限 | エラーメッセージ検出 | 指数バックオフ（30s, 60s, 120s） |
 | tmux セッション喪失 | セッション存在確認失敗 | セッション再作成 |
+
+## セッション起動方法
+
+### ワンコマンド起動（推奨）
+
+```bash
+# ペアプログラミング環境を一発起動
+./scripts/setup_pair_env.sh
+
+# セッション名を指定する場合
+./scripts/setup_pair_env.sh my-feature ~/projects/app
+```
+
+**動作:**
+1. tmuxセッション作成
+2. 左右ペイン分割
+3. 左ペインでClaude Code自動起動
+4. 自動的にtmuxセッションにアタッチ
+
+**セッション構成:**
+```
+┌─────────────────┬─────────────────┐
+│   Pane 0 (左)   │   Pane 1 (右)   │
+│  🤖 Claude Code │  🤖 Codex CLI   │
+│   (自動起動)    │   (待機中)      │
+└─────────────────┴─────────────────┘
+```
+
+**再実行時:** 既存セッションがあれば自動的にアタッチ（冪等性）
+
+参考: https://note.com/astropomeai/n/n387c8e719846
 
 ## 使用例
 
