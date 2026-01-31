@@ -50,10 +50,12 @@ echo "作業ディレクトリ: $WORK_DIR"
 echo ""
 
 # 2. 新規セッション作成（左ペインでclaude起動）
-tmux new-session -d -s "$SESSION_NAME" -n "pair" -c "$WORK_DIR" "claude --dangerously-skip-permissions"
+# Note: Claude Code は対話モードで起動（特別なフラグ不要）
+tmux new-session -d -s "$SESSION_NAME" -n "pair" -c "$WORK_DIR" "claude"
 
 # 3. 右ペイン作成（Codex自動起動）
-tmux split-window -h -t "$SESSION_NAME" -c "$WORK_DIR" "codex --dangerously-bypass-approvals-and-sandbox"
+# Note: Codex は --full-auto で自動承認モード、--sandbox で安全な実行環境
+tmux split-window -h -t "$SESSION_NAME" -c "$WORK_DIR" "codex --full-auto"
 
 # 4. 左ペイン（Claude）を選択
 tmux select-pane -t "$SESSION_NAME:0.0"

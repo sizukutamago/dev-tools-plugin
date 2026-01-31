@@ -1,0 +1,145 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://codex-collab/session-state.schema.json",
+  "title": "Codex Collab Session State",
+  "description": "セッション状態のスキーマ定義",
+  "type": "object",
+  "required": ["schema_version", "session_id", "status", "current_phase", "created_at"],
+  "properties": {
+    "schema_version": {
+      "type": "integer",
+      "description": "スキーマバージョン（破壊的変更時にインクリメント）",
+      "minimum": 1,
+      "default": 1
+    },
+    "session_id": {
+      "type": "string",
+      "description": "セッション一意識別子",
+      "pattern": "^codex-collab-[0-9]+-[0-9]+$"
+    },
+    "status": {
+      "type": "string",
+      "description": "セッションの現在の状態",
+      "enum": ["initializing", "in_progress", "paused", "completed", "failed"]
+    },
+    "current_phase": {
+      "type": "string",
+      "description": "現在のワークフローフェーズ",
+      "enum": ["REQUIREMENTS", "DESIGN", "IMPLEMENTATION", "REVIEW", "COMPLETED"]
+    },
+    "feature": {
+      "type": "string",
+      "description": "開発中の機能名"
+    },
+    "project": {
+      "type": "string",
+      "description": "プロジェクト名"
+    },
+    "working_directory": {
+      "type": "string",
+      "description": "作業ディレクトリの絶対パス"
+    },
+    "tmux_session": {
+      "type": "string",
+      "description": "関連する tmux セッション名"
+    },
+    "created_at": {
+      "type": "string",
+      "description": "セッション作成日時（ISO 8601形式）",
+      "format": "date-time"
+    },
+    "updated_at": {
+      "type": "string",
+      "description": "最終更新日時（ISO 8601形式）",
+      "format": "date-time"
+    },
+    "phases": {
+      "type": "object",
+      "description": "各フェーズの状態",
+      "properties": {
+        "REQUIREMENTS": { "$ref": "#/definitions/phase" },
+        "DESIGN": { "$ref": "#/definitions/phase" },
+        "IMPLEMENTATION": { "$ref": "#/definitions/phase" },
+        "REVIEW": { "$ref": "#/definitions/phase" }
+      },
+      "additionalProperties": false
+    },
+    "pending_callbacks": {
+      "type": "array",
+      "description": "未処理のコールバック（Codex→Claude）",
+      "items": { "$ref": "#/definitions/callback" }
+    },
+    "error_log": {
+      "type": "array",
+      "description": "エラー履歴",
+      "items": { "$ref": "#/definitions/error" }
+    }
+  },
+  "definitions": {
+    "phase": {
+      "type": "object",
+      "description": "フェーズの状態情報",
+      "properties": {
+        "status": {
+          "type": "string",
+          "enum": ["pending", "in_progress", "completed", "skipped"]
+        },
+        "started_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "completed_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "consultations": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": { "type": "string" },
+              "timestamp": { "type": "string", "format": "date-time" },
+              "prompt_file": { "type": "string" },
+              "response_file": { "type": "string" },
+              "parsed_sections": { "type": "object" },
+              "duration_seconds": { "type": "number" }
+            },
+            "required": ["id", "timestamp"]
+          }
+        }
+      }
+    },
+    "callback": {
+      "type": "object",
+      "description": "双方向コールバック（Codex→Claude）",
+      "properties": {
+        "id": { "type": "string" },
+        "type": {
+          "type": "string",
+          "enum": ["VERIFICATION", "CONTEXT"]
+        },
+        "from_phase": { "type": "string" },
+        "content": { "type": "string" },
+        "status": {
+          "type": "string",
+          "enum": ["pending", "responded"]
+        },
+        "response": { "type": "string" }
+      },
+      "required": ["id", "type", "status"]
+    },
+    "error": {
+      "type": "object",
+      "description": "エラー情報",
+      "properties": {
+        "timestamp": { "type": "string", "format": "date-time" },
+        "phase": { "type": "string" },
+        "error_type": { "type": "string" },
+        "message": { "type": "string" },
+        "retry_count": { "type": "integer", "minimum": 0 },
+        "resolved": { "type": "boolean" }
+      },
+      "required": ["timestamp", "error_type", "message"]
+    }
+  }
+}

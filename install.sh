@@ -11,7 +11,7 @@
 # 動作:
 #   - agents/, commands/, skills/ を ~/.claude/ 以下にコピー
 #   - 既存ファイルは上書き
-#   - 他のファイル/ディレクトリは保持（マージ動作）
+#   - ソースで削除されたファイルはターゲットからも削除（--delete）
 
 set -euo pipefail
 
@@ -23,6 +23,7 @@ NC='\033[0m' # No Color
 
 # デフォルト値
 SKIP_DESIGN_DOCS=false
+DRY_RUN=false
 TARGET_DIR="$HOME/.claude"
 
 # ヘルプ表示
@@ -36,6 +37,7 @@ show_help() {
   --skip-design-docs    design-docワークフロー関連をスキップ
                         (hearing, requirements, architecture, design*,
                          database, api, implementation, shared)
+  -n, --dry-run         ドライランモード（変更を適用せずプレビュー）
   -h, --help            このヘルプを表示
 
 例:
@@ -56,6 +58,10 @@ while [[ $# -gt 0 ]]; do
             ;;
         --skip-design-docs)
             SKIP_DESIGN_DOCS=true
+            shift
+            ;;
+        -n|--dry-run)
+            DRY_RUN=true
             shift
             ;;
         -h|--help)
@@ -102,6 +108,9 @@ if [[ "$SKIP_DESIGN_DOCS" == true ]]; then
     echo -e "${YELLOW}除外: design-docワークフロー関連${NC}"
     echo "  (hearing, requirements, architecture, design*, database, api, implementation, shared)"
 fi
+if [[ "$DRY_RUN" == true ]]; then
+    echo -e "${YELLOW}モード: ドライラン（変更は適用されません）${NC}"
+fi
 echo ""
 
 # ターゲットディレクトリが存在しない場合は作成
@@ -125,9 +134,16 @@ for dir in "${DIRS[@]}"; do
     # rsync オプション:
     # -a: アーカイブモード（再帰的、パーミッション保持）
     # -v: 詳細出力
+    # -i: 変更内容を詳細表示（itemize-changes）
+    # --delete: ソースにないファイルをターゲットから削除
+    # --delete-after: 転送完了後に削除（安全）
     # --progress: 進捗表示
     # 末尾の /: ディレクトリ内容をコピー
-    rsync -av --progress ${EXCLUDE_OPTS[@]+"${EXCLUDE_OPTS[@]}"} "$source_path/" "$target_path/"
+    if [[ "$DRY_RUN" == true ]]; then
+        rsync -avn --delete --delete-after -i ${EXCLUDE_OPTS[@]+"${EXCLUDE_OPTS[@]}"} "$source_path/" "$target_path/"
+    else
+        rsync -av --delete --delete-after -i --progress ${EXCLUDE_OPTS[@]+"${EXCLUDE_OPTS[@]}"} "$source_path/" "$target_path/"
+    fi
 
     echo ""
 done

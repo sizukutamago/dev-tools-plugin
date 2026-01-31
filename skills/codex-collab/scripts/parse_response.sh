@@ -1,202 +1,339 @@
 #!/bin/bash
-# 構造化レスポンス解析スクリプト
+# scripts/parse_response.sh - 構造化レスポンス解析（jq ベース強化版）
 # Codex からの応答を解析してセクションを抽出
+#
+# 使用例:
+#   ./parse_response.sh /tmp/codex_output.txt
+#   ./parse_response.sh /tmp/codex_output.txt --section ASSESSMENT
+#   ./parse_response.sh /tmp/codex_output.txt --validate
+#   ./parse_response.sh /tmp/codex_output.txt --format json
 
 set -euo pipefail
 
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+LIB_DIR="${SCRIPT_DIR}/../lib"
+
+# デフォルト設定
+OUTPUT_FORMAT="json"
+SECTION=""
+VALIDATE=false
+
+# セクション定義（関数で取得 - bash 3.x 互換）
+get_sections_for_type() {
+    local response_type="$1"
+    case "$response_type" in
+        REQUIREMENTS)
+            echo "CLARIFICATION_QUESTIONS CONSIDERATIONS"
+            ;;
+        DESIGN)
+            echo "ASSESSMENT RISKS ALTERNATIVES RECOMMENDATION"
+            ;;
+        IMPLEMENTATION)
+            echo "ADVICE PATTERNS CAVEATS"
+            ;;
+        REVIEW)
+            echo "STRENGTHS ISSUES SUGGESTIONS"
+            ;;
+        *)
+            echo ""
+            ;;
+    esac
+}
+
 show_help() {
     cat << 'EOF'
-Usage: parse_response.sh <response_file> [section]
+Usage: parse_response.sh <response_file> [options]
 
 Arguments:
-  response_file   Path to the Codex response file
-  section         (optional) Specific section to extract
+  response_file          Codex レスポンスファイルへのパス
 
-Available sections:
-  RESPONSE:REQUIREMENTS
-    - CLARIFICATION_QUESTIONS
-    - CONSIDERATIONS
+Options:
+  --section <name>       特定のセクションのみ抽出
+  --validate             プロトコル準拠を検証
+  --format <type>        出力形式: json (default), text, raw
+  --detect-callbacks     コールバックマーカーを検出
 
-  RESPONSE:DESIGN
-    - ASSESSMENT
-    - RISKS
-    - ALTERNATIVES
-    - RECOMMENDATION
-
-  RESPONSE:IMPLEMENTATION
-    - ADVICE
-    - PATTERNS
-    - CAVEATS
-
-  RESPONSE:REVIEW
-    - STRENGTHS
-    - ISSUES
-    - SUGGESTIONS
-
-  ALL (default)
-    - Extract all sections
+Response Types and Sections:
+  REQUIREMENTS: CLARIFICATION_QUESTIONS, CONSIDERATIONS
+  DESIGN:       ASSESSMENT, RISKS, ALTERNATIVES, RECOMMENDATION
+  IMPLEMENTATION: ADVICE, PATTERNS, CAVEATS
+  REVIEW:       STRENGTHS, ISSUES, SUGGESTIONS
 
 Examples:
-  # 全セクションを表示
   ./parse_response.sh /tmp/codex_output.txt
-
-  # 特定セクションを抽出
-  ./parse_response.sh /tmp/codex_output.txt ASSESSMENT
-  ./parse_response.sh /tmp/codex_output.txt ISSUES
-
-Output format:
-  JSON object with extracted sections
+  ./parse_response.sh /tmp/codex_output.txt --section ISSUES
+  ./parse_response.sh /tmp/codex_output.txt --validate
 EOF
 }
 
-if [[ $# -lt 1 ]]; then
-    show_help
-    exit 1
-fi
-
-RESPONSE_FILE="$1"
-SECTION="${2:-ALL}"
-
-if [[ ! -f "$RESPONSE_FILE" ]]; then
-    echo "Error: Response file not found: $RESPONSE_FILE" >&2
-    exit 1
-fi
-
-# レスポンス読み込み
-CONTENT=$(cat "$RESPONSE_FILE")
-
-# セクション抽出関数
+# セクション抽出（改良版）
 extract_section() {
     local section_name="$1"
     local content="$2"
+    local section_lower
+    section_lower=$(echo "$section_name" | tr '[:upper:]' '[:lower:]')
 
-    # セクションヘッダーの後から次のセクションヘッダーまたはファイル末尾まで抽出
-    # 対応パターン: "## SECTION_NAME", "### SECTION_NAME", "SECTION_NAME:", "**SECTION_NAME**:"
-    # tolower() で case-insensitive マッチ
-    echo "$content" | awk -v section="$section_name" '
-        BEGIN { found=0; output=""; sec_lower=tolower(section) }
+    # パターンマッチ: ## SECTION, **SECTION**, SECTION:
+    echo "$content" | awk -v section="$section_lower" '
+        BEGIN { found=0; output="" }
         {
             line_lower = tolower($0)
-            # パターンマッチ: "## SECTION", "**SECTION**", "SECTION:"
-            if (match(line_lower, "^##+ +" sec_lower) || match(line_lower, "^\\*\\*" sec_lower "s?\\*\\*") || match(line_lower, "^" sec_lower ":")) {
-                found=1
-                next
-            }
+            if (match(line_lower, "^##+ +" section) || match(line_lower, "^\\*\\*" section "s?\\*\\*") || match(line_lower, "^" section "s?:") || match(line_lower, "^" section "s?$")) { found=1; next }
+            if (found && (match($0, /^##+ +[A-Za-z]/) || match($0, /^\*\*[A-Za-z_]+\*\*/) || match($0, /^[A-Z][A-Za-z_]+:$/))) { found=0 }
+            if (found) { output = output $0 "\n" }
         }
-        found && /^##+ +[A-Za-z]/ { found=0 }
-        found && /^\*\*[A-Za-z_]+\*\*/ { found=0 }
-        found && /^[A-Za-z_]+:$/ { found=0 }
-        found { output = output $0 "\n" }
         END { print output }
-    ' | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//' | head -c 10000
-}
-
-# JSON出力用エスケープ
-json_escape() {
-    local str="$1"
-    str="${str//\\/\\\\}"
-    str="${str//\"/\\\"}"
-    str="${str//$'\n'/\\n}"
-    str="${str//$'\t'/\\t}"
-    str="${str//$'\r'/}"
-    echo "$str"
-}
-
-# セクション存在チェック
-section_exists() {
-    local section_name="$1"
-    local content="$2"
-
-    # パターン: "## SECTION_NAME", "### SECTION_NAME", "SECTION_NAME:", "**SECTION_NAME**"
-    # -i で case-insensitive マッチ
-    if echo "$content" | grep -qiE "^##+ +$section_name|^\*\*$section_name\*\*|^$section_name:"; then
-        return 0
-    else
-        return 1
-    fi
+    ' | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//' | head -c 50000
 }
 
 # レスポンスタイプ検出
 detect_response_type() {
     local content="$1"
 
-    # -i で case-insensitive マッチ
-    if echo "$content" | grep -qiE '\[RESPONSE:REQUIREMENTS\]|CLARIFICATION_QUESTIONS|CONSIDERATIONS'; then
+    # lib/protocol.sh を使用して検出
+    local first_line
+    first_line=$(echo "$content" | head -1)
+
+    if echo "$first_line" | grep -q '\[RESPONSE:REQUIREMENTS\]'; then
         echo "REQUIREMENTS"
-    elif echo "$content" | grep -qiE '\[RESPONSE:DESIGN\]|ASSESSMENT|RISKS|ALTERNATIVES|RECOMMENDATION'; then
+    elif echo "$first_line" | grep -q '\[RESPONSE:DESIGN\]'; then
         echo "DESIGN"
-    elif echo "$content" | grep -qiE '\[RESPONSE:IMPLEMENTATION\]|ADVICE|PATTERNS|CAVEATS'; then
+    elif echo "$first_line" | grep -q '\[RESPONSE:IMPLEMENTATION\]'; then
         echo "IMPLEMENTATION"
-    elif echo "$content" | grep -qiE '\[RESPONSE:REVIEW\]|STRENGTHS|ISSUES|SUGGESTIONS'; then
+    elif echo "$first_line" | grep -q '\[RESPONSE:REVIEW\]'; then
         echo "REVIEW"
     else
-        echo "UNKNOWN"
+        # コンテンツベースの検出
+        if echo "$content" | grep -qiE 'CLARIFICATION_QUESTIONS|CONSIDERATIONS'; then
+            echo "REQUIREMENTS"
+        elif echo "$content" | grep -qiE 'ASSESSMENT.*RISKS|RISKS.*ALTERNATIVES'; then
+            echo "DESIGN"
+        elif echo "$content" | grep -qiE 'ADVICE.*PATTERNS|PATTERNS.*CAVEATS'; then
+            echo "IMPLEMENTATION"
+        elif echo "$content" | grep -qiE 'STRENGTHS.*ISSUES|ISSUES.*SUGGESTIONS'; then
+            echo "REVIEW"
+        else
+            echo "UNKNOWN"
+        fi
+    fi
+}
+
+# コールバック検出
+detect_callbacks() {
+    local content="$1"
+
+    # lib/protocol.sh を使用
+    if [[ -f "${LIB_DIR}/protocol.sh" ]]; then
+        local tmp_file
+        tmp_file=$(mktemp)
+        echo "$content" > "$tmp_file"
+        "${LIB_DIR}/protocol.sh" detect-callbacks "$tmp_file"
+        rm -f "$tmp_file"
+    else
+        # フォールバック: 直接検出
+        local callbacks=()
+        local line_num=0
+        while IFS= read -r line; do
+            ((line_num++)) || true
+            if echo "$line" | grep -qE '^\[CONSULT:CLAUDE:(VERIFICATION|CONTEXT)\]'; then
+                local type
+                type=$(echo "$line" | sed -n 's/.*CONSULT:CLAUDE:\([A-Z]*\).*/\1/p')
+                callbacks+=("{\"type\":\"$type\",\"line\":$line_num}")
+            fi
+        done <<< "$content"
+
+        if [[ ${#callbacks[@]} -eq 0 ]]; then
+            echo "[]"
+        else
+            local json_array
+            json_array=$(printf "%s," "${callbacks[@]}")
+            echo "[${json_array%,}]"
+        fi
+    fi
+}
+
+# プロトコル検証
+validate_response() {
+    local content="$1"
+
+    local first_line
+    first_line=$(echo "$content" | head -1)
+
+    local valid=true
+    local errors=()
+
+    # マーカー存在チェック
+    if ! echo "$first_line" | grep -qE '^\[RESPONSE:(REQUIREMENTS|DESIGN|IMPLEMENTATION|REVIEW)\]'; then
+        valid=false
+        errors+=("Missing or invalid response marker in first line")
+    fi
+
+    # 必須セクションチェック
+    local response_type
+    response_type=$(detect_response_type "$content")
+
+    if [[ "$response_type" != "UNKNOWN" ]]; then
+        local sections
+        sections=$(get_sections_for_type "$response_type")
+        local missing=()
+        for sec in $sections; do
+            if ! echo "$content" | grep -qiE "^##+ +$sec|^\*\*$sec\*\*|^$sec:"; then
+                missing+=("$sec")
+            fi
+        done
+        if [[ ${#missing[@]} -gt 0 ]]; then
+            errors+=("Missing sections: ${missing[*]}")
+        fi
+    fi
+
+    # JSON 出力
+    if [[ "$valid" == true && ${#errors[@]} -eq 0 ]]; then
+        jq -n \
+            --arg type "$response_type" \
+            '{valid: true, response_type: $type, errors: []}'
+    else
+        jq -n \
+            --arg type "$response_type" \
+            --argjson errors "$(printf '%s\n' "${errors[@]}" | jq -R . | jq -s .)" \
+            '{valid: false, response_type: $type, errors: $errors}'
     fi
 }
 
 # メイン処理
-if [[ "$SECTION" == "ALL" ]]; then
-    # レスポンスタイプを検出して全セクション抽出
-    RESPONSE_TYPE=$(detect_response_type "$CONTENT")
+main() {
+    local response_file=""
+    local detect_callbacks_flag=false
 
-    echo "{"
-    echo "  \"response_type\": \"$RESPONSE_TYPE\","
-    echo "  \"sections\": {"
-
-    case "$RESPONSE_TYPE" in
-        REQUIREMENTS)
-            sections=("CLARIFICATION_QUESTIONS" "CONSIDERATIONS")
-            ;;
-        DESIGN)
-            sections=("ASSESSMENT" "RISKS" "ALTERNATIVES" "RECOMMENDATION")
-            ;;
-        IMPLEMENTATION)
-            sections=("ADVICE" "PATTERNS" "CAVEATS")
-            ;;
-        REVIEW)
-            sections=("STRENGTHS" "ISSUES" "SUGGESTIONS")
-            ;;
-        *)
-            # 全セクションを試行
-            sections=("CLARIFICATION_QUESTIONS" "CONSIDERATIONS" "ASSESSMENT" "RISKS" "ALTERNATIVES" "RECOMMENDATION" "ADVICE" "PATTERNS" "CAVEATS" "STRENGTHS" "ISSUES" "SUGGESTIONS")
-            ;;
-    esac
-
-    first=true
-    for sec in "${sections[@]}"; do
-        if section_exists "$sec" "$CONTENT"; then
-            extracted=$(extract_section "$sec" "$CONTENT")
-            if [[ -n "$extracted" ]]; then
-                if [[ "$first" == "true" ]]; then
-                    first=false
+    # 引数解析
+    while [[ $# -gt 0 ]]; do
+        case "$1" in
+            --section)
+                SECTION="$2"
+                shift 2
+                ;;
+            --validate)
+                VALIDATE=true
+                shift
+                ;;
+            --format)
+                OUTPUT_FORMAT="$2"
+                shift 2
+                ;;
+            --detect-callbacks)
+                detect_callbacks_flag=true
+                shift
+                ;;
+            --help|-h)
+                show_help
+                exit 0
+                ;;
+            *)
+                if [[ -z "$response_file" ]]; then
+                    response_file="$1"
                 else
-                    echo ","
+                    echo "Unknown option: $1" >&2
+                    exit 1
                 fi
-                echo -n "    \"$sec\": \"$(json_escape "$extracted")\""
+                shift
+                ;;
+        esac
+    done
+
+    if [[ -z "$response_file" ]]; then
+        echo "Error: response_file required" >&2
+        show_help
+        exit 1
+    fi
+
+    if [[ ! -f "$response_file" ]]; then
+        echo "Error: file not found: $response_file" >&2
+        exit 1
+    fi
+
+    local content
+    content=$(cat "$response_file")
+
+    # コールバック検出モード
+    if [[ "$detect_callbacks_flag" == true ]]; then
+        detect_callbacks "$content"
+        return 0
+    fi
+
+    # 検証モード
+    if [[ "$VALIDATE" == true ]]; then
+        validate_response "$content"
+        return $?
+    fi
+
+    # レスポンスタイプ検出
+    local response_type
+    response_type=$(detect_response_type "$content")
+
+    # 特定セクション抽出
+    if [[ -n "$SECTION" ]]; then
+        local extracted
+        extracted=$(extract_section "$SECTION" "$content")
+
+        if [[ -n "$extracted" ]]; then
+            if [[ "$OUTPUT_FORMAT" == "json" ]]; then
+                jq -n \
+                    --arg section "$SECTION" \
+                    --arg content "$extracted" \
+                    '{section: $section, content: $content, found: true}'
+            else
+                echo "$extracted"
             fi
+        else
+            if [[ "$OUTPUT_FORMAT" == "json" ]]; then
+                jq -n \
+                    --arg section "$SECTION" \
+                    '{section: $section, content: "", found: false, error: "Section not found"}'
+            else
+                echo "Section '$SECTION' not found" >&2
+            fi
+            exit 1
+        fi
+        return 0
+    fi
+
+    # 全セクション抽出
+    local sections_to_extract=""
+    if [[ "$response_type" != "UNKNOWN" ]]; then
+        sections_to_extract=$(get_sections_for_type "$response_type")
+    else
+        # 全セクションを試行
+        sections_to_extract="CLARIFICATION_QUESTIONS CONSIDERATIONS ASSESSMENT RISKS ALTERNATIVES RECOMMENDATION ADVICE PATTERNS CAVEATS STRENGTHS ISSUES SUGGESTIONS"
+    fi
+
+    # JSON 構築
+    local sections_json="{}"
+    for sec in $sections_to_extract; do
+        local extracted
+        extracted=$(extract_section "$sec" "$content")
+        if [[ -n "$extracted" ]]; then
+            sections_json=$(echo "$sections_json" | jq \
+                --arg sec "$sec" \
+                --arg content "$extracted" \
+                '.[$sec] = $content')
         fi
     done
 
-    echo ""
-    echo "  },"
-    echo "  \"raw_length\": ${#CONTENT}"
-    echo "}"
-else
-    # 特定セクションのみ抽出
-    if section_exists "$SECTION" "$CONTENT"; then
-        extracted=$(extract_section "$SECTION" "$CONTENT")
-        echo "{"
-        echo "  \"section\": \"$SECTION\","
-        echo "  \"content\": \"$(json_escape "$extracted")\","
-        echo "  \"found\": true"
-        echo "}"
-    else
-        echo "{"
-        echo "  \"section\": \"$SECTION\","
-        echo "  \"content\": \"\","
-        echo "  \"found\": false,"
-        echo "  \"error\": \"Section '$SECTION' not found in response\""
-        echo "}"
-        exit 1
-    fi
-fi
+    # コールバック検出
+    local callbacks
+    callbacks=$(detect_callbacks "$content")
+
+    # 最終出力
+    jq -n \
+        --arg type "$response_type" \
+        --argjson sections "$sections_json" \
+        --argjson callbacks "$callbacks" \
+        --argjson raw_length "${#content}" \
+        '{
+            response_type: $type,
+            sections: $sections,
+            callbacks: $callbacks,
+            raw_length: $raw_length
+        }'
+}
+
+main "$@"
