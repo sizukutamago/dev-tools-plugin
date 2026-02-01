@@ -127,7 +127,17 @@ triage:
 
 ### Stop hook（タスク完了時フィードバック収集）
 
-`~/.claude/settings.json` に追加:
+`type: "command"` を使用してシェルスクリプトで確実に収集。
+
+#### 1. スクリプト配置
+
+`~/.claude/scripts/collect_feedback.sh` を作成（実行権限付与必須）。
+スクリプトは以下を行う:
+- 標準入力からトランスクリプト情報を受け取る
+- 収集条件を判定（コード変更数、ツール使用数、メッセージ数）
+- 条件を満たす場合のみフィードバックファイルを生成
+
+#### 2. settings.json に追加
 
 ```json
 {
@@ -137,8 +147,8 @@ triage:
         "matcher": "*",
         "hooks": [
           {
-            "type": "prompt",
-            "prompt": "セッションを振り返り、フィードバック収集の要否を判断します。\n\n## 収集条件（いずれかに該当する場合のみ収集）\n- Write/Edit/Bashで実質的なコード変更を行った\n- スキル(/hearing, /architecture, /api等)を使用した\n- ユーザーから修正指示・不満・指摘があった\n- エラーや予期しない失敗が発生した\n- 3ステップ以上の複雑なタスクを実行した\n\n## スキップ条件（以下のみの場合は収集しない）\n- 質問への回答・説明のみ\n- git status/Read/Glob等の閲覧操作のみ\n- 1-2ターンの軽微な対話\n- 設定確認や情報表示のみ\n\n---\n\n【該当する場合のみ】以下を記録:\n\n1. **結果評価**: success: true/false, score: 0.0-1.0, rationale\n2. **問題特定**: type(prompt_unclear|skill_incomplete|example_missing等), target, severity\n3. **ユーザーフィードバック**: 指摘があれば記録\n4. **改善提案**: 具体的な改善案\n\n⚠️ 秘密情報は記録しない\n\n保存先: ~/.claude/feedback/fb-{YYYYMMDD}-{sequence}.yaml\n\n【該当しない場合】何も出力せず終了。"
+            "type": "command",
+            "command": "~/.claude/scripts/collect_feedback.sh"
           }
         ]
       }
@@ -147,9 +157,17 @@ triage:
 }
 ```
 
-> **Note**: `~/.claude/feedback/` ディレクトリは事前に作成が必要:
+#### 収集条件（スクリプト内で判定）
+
+- Write/Edit/Bash ツール使用（コード変更）があった
+- ツール使用が3回以上（複雑なタスク）
+- メッセージ交換が6回以上（実質的なセッション）
+- ただしメッセージ4回未満はスキップ
+
+> **Note**: 事前に以下を実行:
 > ```bash
-> mkdir -p ~/.claude/feedback
+> mkdir -p ~/.claude/feedback ~/.claude/scripts
+> chmod +x ~/.claude/scripts/collect_feedback.sh
 > ```
 
 ## 使用例
