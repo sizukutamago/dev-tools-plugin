@@ -2,7 +2,8 @@
 # Stop hook: フィードバック収集スクリプト
 # セッション終了時に条件判断してフィードバックを保存
 
-set -euo pipefail
+# デバッグログ
+exec 2>> ~/.claude/feedback/debug.log
 
 FEEDBACK_DIR="$HOME/.claude/feedback"
 mkdir -p "$FEEDBACK_DIR"
@@ -10,26 +11,50 @@ mkdir -p "$FEEDBACK_DIR"
 # 標準入力からhookデータを読み取り
 INPUT=$(cat)
 
-# セッション情報を環境変数から取得
-SESSION_ID="${CLAUDE_SESSION_ID:-unknown}"
-STOP_REASON="${CLAUDE_STOP_REASON:-unknown}"
+# デバッグ
+echo "=== $(date) ===" >> "$FEEDBACK_DIR/debug.log"
 
-# hookデータからトランスクリプト情報を抽出
-# jqがあれば使用、なければ簡易パース
-if command -v jq &> /dev/null; then
-    MESSAGE_COUNT=$(echo "$INPUT" | jq -r '.transcript | length // 0' 2>/dev/null || echo "0")
-    TOOL_USES=$(echo "$INPUT" | jq -r '[.transcript[].content[]? | select(.type == "tool_use")] | length // 0' 2>/dev/null || echo "0")
-    # Write/Edit/Bash ツールの使用をチェック
-    CODE_CHANGES=$(echo "$INPUT" | jq -r '[.transcript[].content[]? | select(.type == "tool_use") | select(.name | test("Write|Edit|Bash"))] | length // 0' 2>/dev/null || echo "0")
-else
-    # jqがない場合は簡易カウント
-    MESSAGE_COUNT=$(echo "$INPUT" | grep -c '"role"' 2>/dev/null || echo "0")
-    TOOL_USES=$(echo "$INPUT" | grep -c '"tool_use"' 2>/dev/null || echo "0")
-    CODE_CHANGES=$(echo "$INPUT" | grep -cE '"name":\s*"(Write|Edit|Bash)"' 2>/dev/null || echo "0")
+# 入力が空の場合は終了
+if [ -z "$INPUT" ]; then
+    echo '{"continue": true}'
+    exit 0
 fi
+
+# transcript_path を抽出
+if command -v jq &> /dev/null; then
+    TRANSCRIPT_PATH=$(echo "$INPUT" | jq -r '.transcript_path // empty')
+    SESSION_ID=$(echo "$INPUT" | jq -r '.session_id // "unknown"')
+else
+    TRANSCRIPT_PATH=$(echo "$INPUT" | grep -o '"transcript_path":"[^"]*"' | cut -d'"' -f4)
+    SESSION_ID=$(echo "$INPUT" | grep -o '"session_id":"[^"]*"' | cut -d'"' -f4)
+fi
+
+echo "TRANSCRIPT_PATH=$TRANSCRIPT_PATH" >> "$FEEDBACK_DIR/debug.log"
+
+# transcript_path がない、またはファイルが存在しない場合は終了
+if [ -z "$TRANSCRIPT_PATH" ] || [ ! -f "$TRANSCRIPT_PATH" ]; then
+    echo "No transcript file found" >> "$FEEDBACK_DIR/debug.log"
+    echo '{"continue": true}'
+    exit 0
+fi
+
+# JSONLファイルからメッセージをカウント
+if command -v jq &> /dev/null; then
+    # jqでJSONLをパース
+    MESSAGE_COUNT=$(wc -l < "$TRANSCRIPT_PATH" | tr -d ' ')
+    TOOL_USES=$(grep -c '"tool_use"' "$TRANSCRIPT_PATH" 2>/dev/null || echo "0")
+    CODE_CHANGES=$(grep -cE '"(Write|Edit|Bash)"' "$TRANSCRIPT_PATH" 2>/dev/null || echo "0")
+else
+    MESSAGE_COUNT=$(wc -l < "$TRANSCRIPT_PATH" | tr -d ' ')
+    TOOL_USES=$(grep -c '"tool_use"' "$TRANSCRIPT_PATH" 2>/dev/null || echo "0")
+    CODE_CHANGES=$(grep -cE '"(Write|Edit|Bash)"' "$TRANSCRIPT_PATH" 2>/dev/null || echo "0")
+fi
+
+echo "MESSAGE_COUNT=$MESSAGE_COUNT, TOOL_USES=$TOOL_USES, CODE_CHANGES=$CODE_CHANGES" >> "$FEEDBACK_DIR/debug.log"
 
 # 収集条件の判定
 SHOULD_COLLECT=false
+REASON="none"
 
 # 条件1: コード変更があった（Write/Edit/Bash使用）
 if [ "$CODE_CHANGES" -gt 0 ]; then
@@ -44,15 +69,18 @@ if [ "$TOOL_USES" -ge 3 ]; then
 fi
 
 # 条件3: 多くのメッセージ交換（実質的なセッション）
-if [ "$MESSAGE_COUNT" -ge 6 ]; then
+if [ "$MESSAGE_COUNT" -ge 10 ]; then
     SHOULD_COLLECT=true
     REASON="substantial_session"
 fi
 
-# スキップ条件: メッセージが少なすぎる
-if [ "$MESSAGE_COUNT" -lt 4 ]; then
+# スキップ条件: メッセージが少なすぎる（JSONLの行数ベース）
+if [ "$MESSAGE_COUNT" -lt 6 ]; then
     SHOULD_COLLECT=false
+    REASON="too_few_messages"
 fi
+
+echo "SHOULD_COLLECT=$SHOULD_COLLECT, REASON=$REASON" >> "$FEEDBACK_DIR/debug.log"
 
 # 収集しない場合は終了
 if [ "$SHOULD_COLLECT" = false ]; then
@@ -77,7 +105,7 @@ cat > "$FEEDBACK_DIR/$FILENAME" << EOF
 id: fb-$DATE-$(printf '%03d' $SEQ)
 created_at: $TIMESTAMP
 session_id: $SESSION_ID
-stop_reason: $STOP_REASON
+transcript_path: $TRANSCRIPT_PATH
 
 # セッション統計
 stats:
@@ -99,5 +127,7 @@ privacy:
   redacted: false
 EOF
 
-# 成功メッセージを出力（Claude Code に表示される）
-echo '{"continue": true, "stopReason": "フィードバックを保存しました: '"$FILENAME"'"}'
+echo "SAVED: $FILENAME" >> "$FEEDBACK_DIR/debug.log"
+
+# 成功メッセージを出力
+echo '{"continue": true}'
