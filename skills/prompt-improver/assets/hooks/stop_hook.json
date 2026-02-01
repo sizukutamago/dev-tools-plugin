@@ -1,6 +1,6 @@
 {
   "$schema": "https://raw.githubusercontent.com/anthropics/claude-code/main/schemas/hooks.json",
-  "description": "タスク完了時にフィードバックを収集するStop hook設定例",
+  "description": "タスク完了時に条件付きでフィードバックを収集するStop hook設定例",
   "hooks": {
     "Stop": [
       {
@@ -8,7 +8,7 @@
         "hooks": [
           {
             "type": "prompt",
-            "prompt": "タスク完了時の振り返りを実行します。\n\n## 評価項目\n\n1. **結果評価**: このタスクは成功しましたか？\n   - success: true/false\n   - score: 0.0-1.0（任意）\n   - rationale: 評価理由\n\n2. **問題特定**: うまくいかなかった点はありますか？\n   - issue.type: prompt_unclear | skill_incomplete | skill_incorrect | hook_missing | hook_incorrect | example_missing | pattern_missing | context_lost | misunderstanding | other\n   - target.type: claude_md | skill | hook | command | agent | other\n   - 該当セクション\n   - 深刻度: critical | high | medium | low\n\n3. **ユーザーフィードバック**: ユーザーからの指摘はありましたか？\n\n4. **改善提案**: 今後のために改善すべき点は？\n\n## プライバシー注意\n\n⚠️ APIキー、パスワード等の秘密情報は記録しないこと。\n必要に応じて privacy.redacted: true を設定。\n\n## 出力\n\nフィードバックを ~/.claude/feedback/ にYAML形式で保存してください。\nファイル名: fb-{YYYYMMDD}-{sequence}.yaml\n\n参照: ~/.claude/skills/prompt-improver/references/feedback_schema.md"
+            "prompt": "セッションを振り返り、フィードバック収集の要否を判断します。\n\n## 収集条件（いずれかに該当する場合のみ収集）\n- Write/Edit/Bashで実質的なコード変更を行った\n- スキル(/hearing, /architecture, /api等)を使用した\n- ユーザーから修正指示・不満・指摘があった\n- エラーや予期しない失敗が発生した\n- 3ステップ以上の複雑なタスクを実行した\n\n## スキップ条件（以下のみの場合は収集しない）\n- 質問への回答・説明のみ\n- git status/Read/Glob等の閲覧操作のみ\n- 1-2ターンの軽微な対話\n- 設定確認や情報表示のみ\n\n---\n\n【該当する場合のみ】以下を記録:\n\n1. **結果評価**: success: true/false, score: 0.0-1.0, rationale\n2. **問題特定**: type(prompt_unclear|skill_incomplete|example_missing等), target, severity\n3. **ユーザーフィードバック**: 指摘があれば記録\n4. **改善提案**: 具体的な改善案\n\n⚠️ 秘密情報は記録しない\n\n保存先: ~/.claude/feedback/fb-{YYYYMMDD}-{sequence}.yaml\n\n【該当しない場合】何も出力せず終了。"
           }
         ]
       }

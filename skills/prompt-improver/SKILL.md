@@ -21,9 +21,26 @@ description: Collect feedback on task completion to improve prompts, CLAUDE.md, 
 
 ## ワークフロー
 
-### Step 1: フィードバック収集（自動）
+### Step 1: フィードバック収集（条件付き自動）
 
-Stop hookでタスク完了時に自動収集。以下を記録:
+Stop hookでタスク完了時に**条件を判断して**収集。
+
+#### 収集条件（いずれかに該当する場合のみ）
+
+- Write/Edit/Bashで実質的なコード変更を行った
+- スキル（/hearing, /architecture, /api等）を使用した
+- ユーザーから修正指示・不満・指摘があった
+- エラーや予期しない失敗が発生した
+- 3ステップ以上の複雑なタスクを実行した
+
+#### スキップ条件（以下のみの場合は収集しない）
+
+- 質問への回答・説明のみ
+- git status/Read/Glob等の閲覧操作のみ
+- 1-2ターンの軽微な対話
+- 設定確認や情報表示のみ
+
+#### 収集する情報
 
 1. タスクの要約と結果（成功/部分成功/失敗）
 2. 問題点と関連するプロンプト/SKILLへの紐付け
@@ -121,7 +138,7 @@ triage:
         "hooks": [
           {
             "type": "prompt",
-            "prompt": "タスク完了時の振り返り:\n\n1. このタスクの結果を評価（成功/部分成功/失敗）\n2. うまくいかなかった点があれば、原因となったプロンプト/SKILL/hookを特定\n3. ユーザーからの指摘があれば記録\n4. 改善提案があれば記述\n\nフィードバックを ~/.claude/feedback/ にYAML形式で保存。\nファイル名: fb-{date}-{sequence}.yaml"
+            "prompt": "セッションを振り返り、フィードバック収集の要否を判断します。\n\n## 収集条件（いずれかに該当する場合のみ収集）\n- Write/Edit/Bashで実質的なコード変更を行った\n- スキル(/hearing, /architecture, /api等)を使用した\n- ユーザーから修正指示・不満・指摘があった\n- エラーや予期しない失敗が発生した\n- 3ステップ以上の複雑なタスクを実行した\n\n## スキップ条件（以下のみの場合は収集しない）\n- 質問への回答・説明のみ\n- git status/Read/Glob等の閲覧操作のみ\n- 1-2ターンの軽微な対話\n- 設定確認や情報表示のみ\n\n---\n\n【該当する場合のみ】以下を記録:\n\n1. **結果評価**: success: true/false, score: 0.0-1.0, rationale\n2. **問題特定**: type(prompt_unclear|skill_incomplete|example_missing等), target, severity\n3. **ユーザーフィードバック**: 指摘があれば記録\n4. **改善提案**: 具体的な改善案\n\n⚠️ 秘密情報は記録しない\n\n保存先: ~/.claude/feedback/fb-{YYYYMMDD}-{sequence}.yaml\n\n【該当しない場合】何も出力せず終了。"
           }
         ]
       }
@@ -130,16 +147,21 @@ triage:
 }
 ```
 
+> **Note**: `~/.claude/feedback/` ディレクトリは事前に作成が必要:
+> ```bash
+> mkdir -p ~/.claude/feedback
+> ```
+
 ## 使用例
 
-### フィードバック収集の流れ
+### フィードバック収集の流れ（収集される場合）
 
 ```
 User: "認証機能を実装して"
 
-Claude: [実装作業...]
+Claude: [実装作業... Write/Edit で複数ファイル変更]
 
-[タスク完了 → Stop hook発火]
+[タスク完了 → Stop hook発火 → 収集条件に該当]
 
 Claude: 振り返りを実行します...
 - 結果: 部分成功（基本機能OK、エッジケース未対応）
@@ -147,6 +169,18 @@ Claude: 振り返りを実行します...
 - 改善案: skills/architecture/SKILL.md に認証パターン例を追加
 
 フィードバックを保存しました: ~/.claude/feedback/fb-20260201-001.yaml
+```
+
+### スキップされる場合
+
+```
+User: "git status 見せて"
+
+Claude: [git status 実行、結果表示]
+
+[タスク完了 → Stop hook発火 → スキップ条件に該当]
+
+（何も出力せず終了）
 ```
 
 ### 改善分析の実行
