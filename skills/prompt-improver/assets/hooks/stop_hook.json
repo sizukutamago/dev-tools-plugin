@@ -1,0 +1,17 @@
+{
+  "$schema": "https://raw.githubusercontent.com/anthropics/claude-code/main/schemas/hooks.json",
+  "description": "タスク完了時にフィードバックを収集するStop hook設定例",
+  "hooks": {
+    "Stop": [
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "prompt",
+            "prompt": "タスク完了時の振り返りを実行します。\n\n## 評価項目\n\n1. **結果評価**: このタスクは成功しましたか？\n   - success: true/false\n   - score: 0.0-1.0（任意）\n   - rationale: 評価理由\n\n2. **問題特定**: うまくいかなかった点はありますか？\n   - issue.type: prompt_unclear | skill_incomplete | skill_incorrect | hook_missing | hook_incorrect | example_missing | pattern_missing | context_lost | misunderstanding | other\n   - target.type: claude_md | skill | hook | command | agent | other\n   - 該当セクション\n   - 深刻度: critical | high | medium | low\n\n3. **ユーザーフィードバック**: ユーザーからの指摘はありましたか？\n\n4. **改善提案**: 今後のために改善すべき点は？\n\n## プライバシー注意\n\n⚠️ APIキー、パスワード等の秘密情報は記録しないこと。\n必要に応じて privacy.redacted: true を設定。\n\n## 出力\n\nフィードバックを ~/.claude/feedback/ にYAML形式で保存してください。\nファイル名: fb-{YYYYMMDD}-{sequence}.yaml\n\n参照: ~/.claude/skills/prompt-improver/references/feedback_schema.md"
+          }
+        ]
+      }
+    ]
+  }
+}

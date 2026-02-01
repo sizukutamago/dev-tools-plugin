@@ -1,0 +1,95 @@
+---
+description: "Analyze feedback and generate improvement proposals for prompts and skills"
+version: "1.0.0"
+allowed-tools:
+  - Read
+  - Write
+  - Edit
+  - Grep
+  - Glob
+  - Bash
+  - AskUserQuestion
+context: fork
+agent: General-purpose
+---
+
+# /improve - フィードバック分析と改善提案
+
+蓄積されたフィードバックを分析し、CLAUDE.md/SKILL/hooksの改善提案を生成する。
+
+## ワークフロー
+
+### Phase 1: フィードバック収集
+
+`~/.claude/feedback/` からフィードバックを読み込む。
+
+```bash
+ls -la ~/.claude/feedback/
+```
+
+### Phase 2: パターン分析
+
+分析スクリプトを実行:
+
+```bash
+# 統計表示
+~/.claude/skills/prompt-improver/scripts/analyze_feedback.sh --stats
+
+# パターン分析
+~/.claude/skills/prompt-improver/scripts/analyze_feedback.sh
+```
+
+### Phase 3: 改善提案生成
+
+改善提案を生成:
+
+```bash
+~/.claude/skills/prompt-improver/scripts/generate_improvements.sh
+```
+
+### Phase 4: 改善適用（ユーザー確認）
+
+AskUserQuestionを使用して、適用する改善を選択:
+
+- 各改善案について影響度と工数を説明
+- ユーザーが選択した改善を適用
+
+### Phase 5: フィードバック更新
+
+適用した改善について、関連フィードバックのステータスを更新:
+
+```yaml
+triage:
+  status: fixed
+resolution:
+  fix_ref: "適用した変更の説明"
+  verified_at: "検証日時"
+```
+
+## オプション
+
+| オプション | 説明 |
+|-----------|------|
+| `--stats` | フィードバック統計のみ表示 |
+| `--target <path>` | 特定ファイルの改善のみ |
+
+> **Note**: 改善適用はPhase 4でAskUserQuestionを使用してインタラクティブに実施
+
+## 出力形式
+
+```
+【頻出パターン】
+1. "具体例不足" - 5件（architecture, api, database）
+2. "曖昧な指示" - 3件（CLAUDE.md）
+
+【優先改善対象】
+1. skills/architecture/SKILL.md
+   - 問題: 認証・セキュリティパターンの例が不足
+   - 提案: JWT/OAuth2の実装例を追加
+   - 影響度: high / 工数: low
+```
+
+## 参照
+
+- スキーマ: `skills/prompt-improver/references/feedback_schema.md`
+- スクリプト: `skills/prompt-improver/scripts/`
