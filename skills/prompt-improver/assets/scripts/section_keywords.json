@@ -1,0 +1,81 @@
+{
+  "claude_md": {
+    "RULES.md": {
+      "## Workflow Rules": ["workflow", "task", "plan", "validate", "parallel", "batch"],
+      "## Planning Efficiency": ["planning", "parallelization", "dependency", "efficiency"],
+      "## Implementation Completeness": ["TODO", "実装", "完成", "未完了", "stub", "incomplete", "partial"],
+      "## Scope Discipline": ["スコープ", "MVP", "機能追加", "YAGNI", "scope", "bloat"],
+      "## Code Organization": ["naming", "convention", "directory", "structure", "organization"],
+      "## Workspace Hygiene": ["cleanup", "temp", "一時ファイル", "artifact", "hygiene"],
+      "## Failure Investigation": ["エラー", "デバッグ", "失敗", "調査", "debug", "error", "root cause"],
+      "## Professional Honesty": ["マーケティング", "誇張", "正直", "professional", "honest"],
+      "## Git Workflow": ["git", "commit", "push", "branch", "PR", "rebase", "checkout", "merge", "feature branch"],
+      "## Tool Optimization": ["ツール", "並列", "parallel", "効率", "MCP", "batch"],
+      "## File Organization": ["ファイル構成", "ディレクトリ", "directory", "organization", "tests", "scripts"],
+      "## Safety Rules": ["安全", "safety", "framework", "pattern", "convention"],
+      "## Temporal Awareness": ["日付", "時間", "date", "time", "temporal", "version"]
+    },
+    "PRINCIPLES.md": {
+      "## Philosophy": ["task-first", "evidence", "parallel thinking", "context"],
+      "## Engineering Mindset": ["SOLID", "DRY", "KISS", "設計", "design", "single responsibility"],
+      "## Decision Framework": ["決定", "トレードオフ", "trade-off", "decision", "data-driven"],
+      "## Quality Philosophy": ["品質", "quality", "テスト", "test", "security", "performance"]
+    },
+    "FLAGS.md": {
+      "## Mode Activation Flags": ["brainstorm", "introspect", "orchestrate", "task-manage", "flag"],
+      "## MCP Server Flags": ["context7", "sequential", "playwright", "magic", "morphllm", "serena", "MCP"],
+      "## Analysis Depth Flags": ["think", "think-hard", "ultrathink", "analysis"],
+      "## Execution Control Flags": ["delegate", "concurrency", "loop", "validate", "safe-mode"],
+      "## Output Optimization Flags": ["ultracompressed", "scope", "focus", "token"]
+    }
+  },
+  "skills": {
+    "architecture": {
+      "## 概要": ["アーキテクチャ", "architecture", "設計", "design"],
+      "## セキュリティパターン": ["JWT", "認証", "OAuth", "セキュリティ", "暗号化", "auth", "security", "token"],
+      "## アーキテクチャ決定": ["ADR", "設計決定", "構造", "レイヤー", "architecture decision"],
+      "## インフラ設計": ["インフラ", "infrastructure", "デプロイ", "deploy", "cloud"]
+    },
+    "api": {
+      "## 概要": ["API", "エンドポイント", "endpoint"],
+      "## エンドポイント設計": ["REST", "API", "HTTP", "endpoint", "route", "method"],
+      "## リクエスト/レスポンス": ["request", "response", "payload", "body", "header"],
+      "## エラーハンドリング": ["error", "エラー", "status code", "exception"]
+    },
+    "database": {
+      "## 概要": ["データベース", "database", "DB"],
+      "## データモデル": ["スキーマ", "エンティティ", "schema", "entity", "table", "model"],
+      "## インデックス設計": ["index", "インデックス", "performance", "query"],
+      "## マイグレーション": ["migration", "マイグレーション", "alter", "change"]
+    },
+    "implementation": {
+      "## 概要": ["実装", "implementation", "コーディング"],
+      "## コーディング規約": ["コーディング", "規約", "coding", "standard", "convention", "style"],
+      "## テスト戦略": ["テスト", "test", "unit", "integration", "e2e"],
+      "## デプロイ": ["デプロイ", "deploy", "CI/CD", "pipeline"]
+    },
+    "requirements": {
+      "## 概要": ["要件", "requirement", "仕様"],
+      "## 機能要件": ["機能", "functional", "FR", "feature"],
+      "## 非機能要件": ["非機能", "non-functional", "NFR", "performance", "security"]
+    },
+    "design": {
+      "## 概要": ["画面", "UI", "デザイン", "screen"],
+      "## 画面設計": ["画面", "screen", "UI", "component", "layout"],
+      "## ユーザーフロー": ["フロー", "flow", "navigation", "transition"]
+    },
+    "hearing": {
+      "## 概要": ["ヒアリング", "hearing", "要件収集"],
+      "## 質問項目": ["質問", "question", "interview", "clarify"]
+    },
+    "prompt-improver": {
+      "## 概要": ["プロンプト", "prompt", "改善", "improve"],
+      "## フィードバック収集": ["フィードバック", "feedback", "収集", "collect"],
+      "## 分析": ["分析", "analysis", "pattern", "trend"]
+    },
+    "codex-collab": {
+      "## 概要": ["codex", "collaboration", "pair programming"],
+      "## tmux連携": ["tmux", "pane", "terminal"]
+    }
+  }
+}

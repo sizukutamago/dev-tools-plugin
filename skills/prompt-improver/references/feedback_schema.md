@@ -220,3 +220,107 @@ triage:
   priority: high
   labels: [security, documentation]
 ```
+
+## 自動抽出セクション（extracted）
+
+Stop hook が自動生成する詳細情報。`extract_transcript.py` によって JSONL から抽出。
+
+```yaml
+# === 自動抽出された詳細情報 ===
+extracted:
+  # 使用されたスキル一覧
+  skills_used:
+    - name: "architecture"      # スキル名
+      count: 3                  # 使用回数
+      first_line: 45            # 最初の使用行
+      last_line: 890            # 最後の使用行
+
+  # 変更されたファイル
+  changed_files:
+    - path: "src/auth.ts"       # ファイルパス
+      op: "edit"                # 操作（write/edit）
+      via: "Edit"               # 使用ツール
+
+  # 検出されたエラー
+  errors:
+    - kind: "tool_error"        # エラー種別
+      tool: "Bash"              # ツール名
+      message: "Command failed" # エラーメッセージ（最大200文字）
+      line: 234                 # 発生行
+      context_keywords: ["git", "commit"]  # コンテキストキーワード
+      linked_target:            # 紐付けられたセクション
+        type: "claude_md"       # タイプ（claude_md/skill）
+        file: "RULES.md"        # ファイル名
+        section: "## Git Workflow"  # セクション名
+        confidence: 0.67        # リンク信頼度（0.0-1.0）
+        matched_keywords: ["git", "commit"]  # 根拠となったキーワード（ノイズ削減済み）
+
+  # ユーザー修正指示
+  user_corrections:
+    count: 2                    # 修正回数
+    items:
+      - line: 156               # 発生行
+        excerpt: "違う、そうじゃなくて..."  # 抜粋（最大120文字）
+        patterns: ["negation_start", "contrast"]  # マッチしたパターン
+        score: 4                # スコア（3以上で記録）
+        linked_skill: "architecture"  # アクティブだったスキル
+        linked_target:          # 紐付けられたセクション
+          type: "skill"
+          file: "skills/architecture/SKILL.md"
+          section: "## セキュリティパターン"
+          confidence: 0.67
+          matched_keywords: ["JWT", "認証"]
+        context_keywords: ["JWT", "認証"]
+
+  # 改善対象の優先度付きリスト（最重要）
+  improvement_targets:
+    - target:
+        type: "skill"
+        file: "skills/architecture/SKILL.md"
+        section: "## セキュリティパターン"
+      errors: 2                 # エラー数
+      corrections: 1            # 修正指示数
+      raw_blame_score: 8        # 元式: 3*errors + 2*corrections
+      blame_score: 5.3          # 重み付きスコア（優先度ソートに使用）
+      avg_confidence: 0.67      # 対象への平均リンク信頼度（0.0-1.0）
+      keywords: ["JWT", "認証", "セキュリティ"]  # 関連キーワード
+    - target:
+        type: "claude_md"
+        file: "RULES.md"
+        section: "## Git Workflow"
+      errors: 1
+      corrections: 0
+      raw_blame_score: 3
+      blame_score: 2.0
+      avg_confidence: 0.67
+      keywords: ["git", "commit"]
+```
+
+### improvement_targets の活用
+
+`improvement_targets` は `blame_score`（重み付き）でソートされており、**どのセクションを優先的に改善すべきか**が一目でわかる。
+
+- `raw_blame_score = 3 * errors + 2 * corrections`
+- `blame_score = raw_blame_score * avg_confidence`（`avg_confidence` は 0.0-1.0）
+- 最大10件まで記録
+
+### キーワードマッピング
+
+`section_keywords.json` でセクションとキーワードの対応を定義。
+エラーや修正指示の前後コンテキストからキーワードを抽出し、最もマッチするセクションに紐付け。
+
+```json
+{
+  "claude_md": {
+    "RULES.md": {
+      "## Git Workflow": ["git", "commit", "push", "branch"],
+      "## Implementation Completeness": ["TODO", "実装", "完成"]
+    }
+  },
+  "skills": {
+    "architecture": {
+      "## セキュリティパターン": ["JWT", "認証", "OAuth"]
+    }
+  }
+}
+```

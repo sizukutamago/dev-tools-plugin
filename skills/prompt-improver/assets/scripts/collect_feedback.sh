@@ -125,7 +125,25 @@ issues: []
 # プライバシー
 privacy:
   redacted: false
+
 EOF
+
+# Pythonスクリプトで詳細情報を抽出して追記
+EXTRACT_SCRIPT="$HOME/.claude/scripts/extract_transcript.py"
+if [ -f "$EXTRACT_SCRIPT" ] && command -v python3 &> /dev/null; then
+    echo "Running extract_transcript.py..." >> "$FEEDBACK_DIR/debug.log"
+    EXTRACTED=$(python3 "$EXTRACT_SCRIPT" "$TRANSCRIPT_PATH" 2>> "$FEEDBACK_DIR/debug.log")
+    if [ -n "$EXTRACTED" ]; then
+        echo "" >> "$FEEDBACK_DIR/$FILENAME"
+        echo "# 自動抽出された詳細情報" >> "$FEEDBACK_DIR/$FILENAME"
+        echo "$EXTRACTED" >> "$FEEDBACK_DIR/$FILENAME"
+        echo "Extracted data appended" >> "$FEEDBACK_DIR/debug.log"
+    else
+        echo "No extracted data (script returned empty)" >> "$FEEDBACK_DIR/debug.log"
+    fi
+else
+    echo "extract_transcript.py not found or python3 not available" >> "$FEEDBACK_DIR/debug.log"
+fi
 
 echo "SAVED: $FILENAME" >> "$FEEDBACK_DIR/debug.log"
 
