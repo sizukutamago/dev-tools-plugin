@@ -2,11 +2,12 @@
 # Stop hook: フィードバック収集スクリプト
 # セッション終了時に条件判断してフィードバックを保存
 
-# デバッグログ
-exec 2>> ~/.claude/feedback/debug.log
-
 FEEDBACK_DIR="$HOME/.claude/feedback"
 mkdir -p "$FEEDBACK_DIR"
+
+# 元の stderr を退避してからデバッグログにリダイレクト
+exec 3>&2
+exec 2>> "$FEEDBACK_DIR/debug.log"
 
 # 標準入力からhookデータを読み取り
 INPUT=$(cat)
@@ -42,13 +43,18 @@ fi
 if command -v jq &> /dev/null; then
     # jqでJSONLをパース
     MESSAGE_COUNT=$(wc -l < "$TRANSCRIPT_PATH" | tr -d ' ')
-    TOOL_USES=$(grep -c '"tool_use"' "$TRANSCRIPT_PATH" 2>/dev/null || echo "0")
-    CODE_CHANGES=$(grep -cE '"(Write|Edit|Bash)"' "$TRANSCRIPT_PATH" 2>/dev/null || echo "0")
+    # grep -c は「マッチなし」で exit 1 になるが出力は 0 のため、|| echo "0" を付けると "0\n0" になる
+    TOOL_USES=$(grep -c '"tool_use"' "$TRANSCRIPT_PATH" 2>/dev/null || true)
+    CODE_CHANGES=$(grep -cE '"(Write|Edit|Bash)"' "$TRANSCRIPT_PATH" 2>/dev/null || true)
 else
     MESSAGE_COUNT=$(wc -l < "$TRANSCRIPT_PATH" | tr -d ' ')
-    TOOL_USES=$(grep -c '"tool_use"' "$TRANSCRIPT_PATH" 2>/dev/null || echo "0")
-    CODE_CHANGES=$(grep -cE '"(Write|Edit|Bash)"' "$TRANSCRIPT_PATH" 2>/dev/null || echo "0")
+    TOOL_USES=$(grep -c '"tool_use"' "$TRANSCRIPT_PATH" 2>/dev/null || true)
+    CODE_CHANGES=$(grep -cE '"(Write|Edit|Bash)"' "$TRANSCRIPT_PATH" 2>/dev/null || true)
 fi
+
+# transcript が空/読み取り不能などで grep が何も出さなかった場合は 0 扱い
+TOOL_USES=${TOOL_USES:-0}
+CODE_CHANGES=${CODE_CHANGES:-0}
 
 echo "MESSAGE_COUNT=$MESSAGE_COUNT, TOOL_USES=$TOOL_USES, CODE_CHANGES=$CODE_CHANGES" >> "$FEEDBACK_DIR/debug.log"
 
@@ -126,6 +132,11 @@ issues: []
 privacy:
   redacted: false
 
+# トリアージ（初期状態）
+triage:
+  status: open
+  priority: medium
+
 EOF
 
 # Pythonスクリプトで詳細情報を抽出して追記
@@ -146,6 +157,17 @@ else
 fi
 
 echo "SAVED: $FILENAME" >> "$FEEDBACK_DIR/debug.log"
+
+# === 閾値チェック: 未処理フィードバックが多い場合は通知 ===
+THRESHOLD=${FEEDBACK_THRESHOLD:-5}
+# triage: status: open を含むファイルをカウント（今回作成分も含む）
+pending_count=$(grep -l "status: open" "$FEEDBACK_DIR"/*.yaml 2>/dev/null | wc -l | tr -d ' ')
+
+if [ "$pending_count" -ge "$THRESHOLD" ]; then
+  # fd 3（元の stderr）に通知（ユーザーに表示される）
+  echo "" >&3
+  echo "📊 未処理フィードバック: ${pending_count}件 → /improve で改善適用" >&3
+fi
 
 # 成功メッセージを出力
 echo '{"continue": true}'

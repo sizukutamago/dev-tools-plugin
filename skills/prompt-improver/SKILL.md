@@ -118,7 +118,7 @@ proposed_actions:
     effort: low
 
 triage:
-  status: open                  # open | triaged | in_progress | fixed | verified
+  status: open                  # open | triaged | in_progress | fixed | verified | wont_fix
   priority: high
   labels: [documentation, example]
 ```
@@ -169,6 +169,20 @@ triage:
 > mkdir -p ~/.claude/feedback ~/.claude/scripts
 > chmod +x ~/.claude/scripts/collect_feedback.sh
 > ```
+
+#### 自動通知機能
+
+フィードバックが閾値（デフォルト5件）以上溜まると、タスク終了時に通知を表示:
+
+```
+📊 未処理フィードバック: 7件 → /improve で改善適用
+```
+
+閾値は環境変数で変更可能:
+
+```bash
+export FEEDBACK_THRESHOLD=10  # 10件以上で通知
+```
 
 ## 使用例
 
@@ -236,7 +250,7 @@ Claude: フィードバックを分析します...
 ## 依存関係
 
 標準Unixツールのみ（追加インストール不要）:
-- bash, grep, awk, sed, date
+- bash, awk, grep, sed, date, sort, uniq, head, stat, mv, mkdir
 
 ## プライバシー注意
 
@@ -252,7 +266,28 @@ Claude: フィードバックを分析します...
 - `collect_feedback.sh`: フィードバック収集・保存（原子的ID生成）
 - `analyze_feedback.sh`: パターン分析（--stats, --target対応）
 - `generate_improvements.sh`: 改善提案生成
-- `update_triage.sh`: トリアージステータス更新
+- `update_triage.sh`: トリアージステータス更新（triage未設定時は自動追加）
+- `archive_feedback.sh`: 改善済み/古いログをアーカイブ
+
+### アーカイブ機能
+
+改善済みや古いフィードバックを整理:
+
+```bash
+# fixed/verified/wont_fix をすべてアーカイブ
+./scripts/archive_feedback.sh --all-fixed
+
+# verified のみアーカイブ
+./scripts/archive_feedback.sh --status verified
+
+# 30日以上古いログをアーカイブ
+./scripts/archive_feedback.sh --older-than 30
+
+# ドライラン（確認のみ）
+./scripts/archive_feedback.sh --all-fixed --dry-run
+```
+
+アーカイブ先: `~/.claude/feedback/archive/`
 
 ### references/
 
