@@ -69,9 +69,15 @@
       "## 質問項目": ["質問", "question", "interview", "clarify"]
     },
     "prompt-improver": {
-      "## 概要": ["プロンプト", "prompt", "改善", "improve"],
-      "## フィードバック収集": ["フィードバック", "feedback", "収集", "collect"],
-      "## 分析": ["分析", "analysis", "pattern", "trend"]
+      "## 概要": ["プロンプト", "prompt", "改善", "improve", "/improve"],
+      "## フィードバック収集": [
+        "フィードバック", "feedback", "収集", "collect",
+        "検出", "detect", "のってない", "見落とし", "missing"
+      ],
+      "## 分析": [
+        "分析", "analysis", "pattern", "trend",
+        "おかしい", "wrong", "的外れ", "incorrect"
+      ]
     },
     "codex-collab": {
       "## 概要": ["codex", "collaboration", "pair programming"],

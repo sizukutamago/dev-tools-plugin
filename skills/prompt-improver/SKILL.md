@@ -62,6 +62,30 @@ Stop hookでタスク完了時に**条件を判断して**収集。
 ./scripts/analyze_feedback.sh --target CLAUDE.md
 ```
 
+### Step 2.5: 構造改善候補の抽出
+
+フィードバックパターンから、新スキル作成や既存スキル分割の推奨を生成。
+
+```bash
+# 構造改善レポート生成
+python3 ~/.claude/skills/prompt-improver/scripts/recommend_structure.py
+```
+
+**出力**:
+- 新スキル候補: 既存にマップできない課題パターン（3回以上の繰り返し、低信頼度）
+- 分割候補: 1スキル内で独立テーマが分散（Jaccard類似度が低いクラスター）
+
+**判断基準**:
+
+| 候補種別 | 条件 |
+|---------|------|
+| 新スキル | 同系統キーワードが3回以上、avg_confidence < 0.5、linked_target なし |
+| 分割 | 同一スキルへの指摘が2+クラスターに分散、クラスター間類似度 < 0.3 |
+
+**採否判断**:
+- 新スキル推奨 → 「作成する / 保留する」を確認
+- 分割推奨 → 「分割する / 既存に追記で済ませる」を確認
+
 ### Step 3: 改善提案・適用
 
 分析結果から具体的な改善案を生成:
@@ -266,6 +290,7 @@ Claude: フィードバックを分析します...
 - `collect_feedback.sh`: フィードバック収集・保存（原子的ID生成）
 - `analyze_feedback.sh`: パターン分析（--stats, --target対応）
 - `generate_improvements.sh`: 改善提案生成
+- `recommend_structure.py`: 構造改善レポート生成（新スキル候補/分割候補）
 - `update_triage.sh`: トリアージステータス更新（triage未設定時は自動追加）
 - `archive_feedback.sh`: 改善済み/古いログをアーカイブ
 

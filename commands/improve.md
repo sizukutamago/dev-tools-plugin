@@ -39,6 +39,29 @@ ls -la ~/.claude/feedback/
 ~/.claude/skills/prompt-improver/scripts/analyze_feedback.sh
 ```
 
+### Phase 2.5: 構造改善候補の抽出
+
+フィードバックパターンから新スキル作成・スキル分割の推奨を生成:
+
+```bash
+python3 ~/.claude/skills/prompt-improver/scripts/recommend_structure.py
+```
+
+**出力例**:
+```
+【新スキル候補】
+1) openapi-lifecycle（6件 / high:3）
+   - 根拠: 既存ターゲットに結び付かない指摘が反復（unmapped率: 83%）
+   - 代表キーワード: openapi, schema, validation
+
+【スキル分割候補】
+1) skills/architecture/SKILL.md（11件）
+   - クラスターA: security（6件）: auth, jwt, oauth
+   - クラスターB: decisions（5件）: adr, trade-off
+```
+
+該当がない場合は「構造改善の推奨はありません」と表示。
+
 ### Phase 3: 改善提案生成
 
 改善提案を生成:

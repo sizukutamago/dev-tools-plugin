@@ -61,9 +61,42 @@ DEFAULT_KEYWORDS = {
 
 # ユーザー修正検出パターン
 CORRECTION_PATTERNS = {
+    # 既存パターン
     "negation_start": re.compile(r"^(いや|違う|違います|そうじゃない|それじゃない|間違|訂正|no[,.]|not |that's not|you misunderstood)", re.IGNORECASE),
     "contrast": re.compile(r"(ではなく|じゃなくて|ではなくて|instead|rather than)", re.IGNORECASE),
     "correction_request": re.compile(r"(直して|修正して|やり直して|〜にして|してください|please fix|please change|redo)", re.IGNORECASE),
+
+    # 新規: ユーザー指摘パターン
+    "instruction_reminder": re.compile(
+        r"(って言った|と言った|って指示した|って頼んだ|told you|said to|asked you|I said)",
+        re.IGNORECASE
+    ),
+    "why_doing": re.compile(
+        r"(なんで|なぜ|どうして|why).{0,20}(してる|やってる|している|するの|させてる|させて|doing|did you)",
+        re.IGNORECASE
+    ),
+    "comprehension_check": re.compile(
+        r"(聞いてた|聞いてる|わかってる|理解してる|読んだ(?:\?|？)|見た(?:\?|？)|are you listening|did you understand|did you read)",
+        re.IGNORECASE
+    ),
+
+    # 繰り返し不満
+    "repetition_frustration": re.compile(
+        r"(もう一回|何度も|さっきも)(言|説明)",
+        re.IGNORECASE
+    ),
+
+    # 不足指摘（質問形式・確認形式を除外）
+    "missing_element": re.compile(
+        r"(がない|が足りない|が抜けてる|を忘れてる)(?!か|ことを|ように|ようです|かも)",
+        re.IGNORECASE
+    ),
+
+    # 確認期待
+    "expectation_check": re.compile(
+        r"(じゃないの|でしょ|だよね)(?:\?|？)",
+        re.IGNORECASE
+    ),
 }
 
 
@@ -191,9 +224,20 @@ def detect_user_correction(text: str) -> Optional[dict]:
     score = 0
     patterns_matched = []
 
+    # 高スコアパターン（単独で検出されるべき明示的な指摘）
+    # expectation_check は曖昧なため除外（他パターンとの組み合わせで検出）
+    high_score_patterns = {
+        "instruction_reminder", "why_doing", "comprehension_check",
+        "repetition_frustration", "missing_element"
+    }
+
     for pattern_name, pattern in CORRECTION_PATTERNS.items():
         if pattern.search(text):
-            score += 2
+            # 明示的な指摘パターンは高スコア（単独で閾値を超える）
+            if pattern_name in high_score_patterns:
+                score += 3
+            else:
+                score += 2
             patterns_matched.append(pattern_name)
 
     # ファイル名や具体名詞があればボーナス
@@ -307,7 +351,6 @@ def process_transcript(jsonl_path: str) -> dict:
                                     "tool": "unknown",  # tool_use_id から逆引きが必要だが簡略化
                                     "message": error_content[:200],
                                     "line": line_number,
-                                    "context_keywords": sorted(list(extract_keywords_from_text(context_text)))[:10]
                                 }
                                 if linked:
                                     error_entry["linked_target"] = linked
@@ -321,6 +364,10 @@ def process_transcript(jsonl_path: str) -> dict:
                                     # 根拠キーワードを優先して保存
                                     target_issues[target_key]["matched_keywords"].update(matched_kws)
 
+                                # context_keywords を YAML 出力用に保存（recommend_structure.py で使用）
+                                error_entry["context_keywords"] = sorted(
+                                    list(extract_keywords_from_text(context_text))
+                                )[:15]
                                 errors.append(error_entry)
 
             # ユーザー修正の検出
@@ -336,13 +383,13 @@ def process_transcript(jsonl_path: str) -> dict:
                         "excerpt": correction["excerpt"],
                         "patterns": correction["patterns"],
                         "score": correction["score"],
-                        "linked_skill": active_skill
+                        "linked_skill": active_skill,
+                        "context_keywords": sorted(list(
+                            extract_keywords_from_text(context_text)
+                        ))[:10]
                     }
                     if linked:
                         correction_entry["linked_target"] = linked
-                        correction_entry["context_keywords"] = sorted(list(
-                            extract_keywords_from_text(context_text)
-                        ))[:10]
                         # タプルキーで安全に
                         target_key = (linked['type'], linked['file'], linked['section'])
                         confidence = linked.get('confidence', 0.5)
@@ -451,6 +498,11 @@ def format_yaml_output(extracted: dict) -> str:
                     lines.append(
                         f"        matched_keywords: {json.dumps(lt['matched_keywords'][:5], ensure_ascii=False)}"
                     )
+            # context_keywords を出力（recommend_structure.py で使用）
+            if err.get("context_keywords"):
+                lines.append(
+                    f"      context_keywords: {json.dumps(err['context_keywords'][:10], ensure_ascii=False)}"
+                )
     else:
         lines.append("  errors: []")
 
