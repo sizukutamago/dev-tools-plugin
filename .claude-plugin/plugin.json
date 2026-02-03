@@ -1,9 +1,17 @@
 {
-  "name": "ai-skills",
+  "name": "dev-tools-plugin",
   "version": "1.0.0",
-  "description": "設計書作成ワークフロースキルとエージェント集。8フェーズの設計プロセスを自動化",
+  "description": "開発効率化ツール集。TDD、コード品質、UI/UXガイドライン、プロンプト改善などを提供するClaude Codeプラグイン。",
   "author": {
     "name": "sizukutamago"
   },
-  "keywords": ["design-docs", "requirements", "architecture", "workflow", "japanese"]
+  "keywords": [
+    "dev-tools",
+    "tdd",
+    "biome",
+    "linting",
+    "react",
+    "prompt-improvement",
+    "japanese"
+  ]
 }
