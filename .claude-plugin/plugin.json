@@ -1,17 +1,19 @@
 {
   "name": "dev-tools-plugin",
-  "version": "1.0.0",
-  "description": "開発効率化ツール集。TDD、コード品質、UI/UXガイドライン、プロンプト改善などを提供するClaude Codeプラグイン。",
+  "version": "2.0.0",
+  "description": "開発効率化ツール集。AI連携（Codex/Cursor/Gemini）、コード品質（Biome/dependency-cruiser）、プロンプト改善を提供。",
   "author": {
     "name": "sizukutamago"
   },
   "keywords": [
-    "dev-tools",
-    "tdd",
+    "ai-collaboration",
+    "codex",
+    "cursor",
+    "gemini",
     "biome",
-    "linting",
-    "react",
+    "dependency-cruiser",
     "prompt-improvement",
+    "tmux",
     "japanese"
   ]
 }

@@ -1,37 +1,53 @@
 # dev-tools-plugin
 
-Claude Code プラグインとして、開発効率化ツール集を提供するリポジトリ。TDD、コード品質、UI/UXガイドライン、プロンプト改善などを含む。
+Claude Code プラグインとして、開発効率化ツール集を提供するリポジトリ。AI連携、コード品質ツール、プロンプト改善を含む。
 
 ## プロジェクト構造
 
 ```
 dev-tools-plugin/
 ├── .claude-plugin/          # プラグインメタデータ
-├── agents/                  # エージェント定義（3種）
-│   ├── tdd-test-writer.md
-│   ├── tdd-implementer.md
-│   └── tdd-refactorer.md
-├── commands/                # コマンド定義（2種）
-│   ├── dig.md
+├── commands/                # コマンド定義（1種）
 │   └── improve.md
-├── skills/                  # スキル実装（12種）
-│   ├── agent-browser/      # ブラウザ自動化
-│   ├── biome/              # Linting/Formatting設定
+├── skills/                  # スキル実装（7種）
+│   ├── tmux-ai-chat/       # tmux AI チャット基盤
+│   ├── ai-research/        # Gemini との調査連携
+│   ├── codex-collab/       # Codex との設計相談
+│   ├── cursor-collab/      # Cursor Agent との設計相談
+│   ├── biome/              # Linting/Formatting 設定
 │   ├── dependency-cruiser/ # アーキテクチャ検証
-│   ├── subagent-driven-development/ # サブエージェント開発
-│   ├── web-design-guidelines/ # Webデザインガイドライン
-│   ├── software-architecture/ # ソフトウェアアーキテクチャ
-│   ├── vercel-react-best-practices/ # React/Vercelベストプラクティス
-│   ├── prompt-engineering/ # プロンプトエンジニアリング
-│   ├── kaizen/             # 継続的改善
-│   ├── brainstorming/      # ブレインストーミング
-│   ├── tdd-integration/    # TDD統合
-│   ├── codex-collab/       # Codex連携
 │   └── prompt-improver/    # プロンプト改善
-├── biome/                   # ルートBiome設定テンプレート
-├── dependency-cruiser/      # ルートdep-cruiser設定テンプレート
-└── install.sh               # インストールスクリプト
+├── scripts/                 # セットアップスクリプト
+│   └── setup-ai-collab.sh  # AI CLI 設定インストール
+├── biome/                   # Biome 設定テンプレート
+├── dependency-cruiser/      # dep-cruiser 設定テンプレート
+├── AGENTS.md                # Codex/Cursor Agent 用設定
+└── GEMINI.md                # Gemini CLI 用設定
 ```
+
+## スキル一覧
+
+### AI 連携
+
+| スキル | 説明 | トリガー例 |
+|--------|------|-----------|
+| tmux-ai-chat | tmux ペイン経由の AI チャット基盤 | - |
+| ai-research | Gemini との調査・リサーチ | 「調査して」「リサーチして」 |
+| codex-collab | Codex との設計相談・レビュー | 「Codex と相談」「Codex にレビュー」 |
+| cursor-collab | Cursor Agent との設計相談・レビュー | 「Cursor と相談」「Cursor にレビュー」 |
+
+### コード品質
+
+| スキル | 説明 | トリガー例 |
+|--------|------|-----------|
+| biome | Biome (Linter/Formatter) 設定 | 「Biome 設定」「リンター設定」 |
+| dependency-cruiser | 依存関係・アーキテクチャ検証 | 「依存関係チェック」 |
+
+### プロンプト改善
+
+| スキル | 説明 | トリガー例 |
+|--------|------|-----------|
+| prompt-improver | フィードバック収集・改善提案 | `/improve` |
 
 ## コーディング規約
 
@@ -62,47 +78,32 @@ version: X.Y.Z
 ## エラーハンドリング
 ```
 
-**エージェント:**
+## セットアップ
 
-```markdown
----
-name: agent-name
-description: English trigger description
-model: inherit
-color: blue
-tools: [list]
----
+### プラグインとして使用
 
-## Core Responsibilities
-## Process Description
-## Output Format
+```bash
+# ローカル開発時
+claude --plugin-dir /path/to/dev-tools-plugin
+
+# または marketplace 経由
+claude plugin install dev-tools-plugin@your-marketplace
+```
+
+### AI CLI 設定のインストール
+
+Codex/Cursor/Gemini CLI が設定ファイルを読み込めるようにする:
+
+```bash
+./scripts/setup-ai-collab.sh         # ~/.codex/, ~/.gemini/ にインストール
+./scripts/setup-ai-collab.sh --force # 既存ファイルを上書き
 ```
 
 ## コマンド
 
-### インストール
-
 ```bash
-./install.sh                      # ~/.claude にインストール
-./install.sh -t /custom/path      # カスタムパス指定
-```
-
-### スキル呼び出し
-
-```bash
-/dig              # コードベース調査
 /improve          # プロンプト改善分析
-/setup-biome      # Biome設定
-/setup-depcruise  # dependency-cruiser設定
 ```
-
-### TDDエージェント
-
-TDDワークフローは3つのエージェントで構成:
-
-1. **tdd-test-writer**: RED フェーズ - 失敗するテストを書く
-2. **tdd-implementer**: GREEN フェーズ - テストを通す最小実装
-3. **tdd-refactorer**: REFACTOR フェーズ - コード改善
 
 ## 変更時の注意
 
@@ -111,12 +112,6 @@ TDDワークフローは3つのエージェントで構成:
 1. `SKILL.md` の frontmatter description は英語で記述
 2. バージョン番号を適切に更新（セマンティックバージョニング）
 3. `references/` 配下のテンプレートとの整合性を確認
-
-### エージェント編集時
-
-1. `tools` リストは実際に使用可能なツールのみ記載
-2. `color` は他エージェントと重複しないよう設定
-3. `model: inherit` を基本とし、特別な理由がある場合のみ変更
 
 ## prompt-improver について
 
@@ -130,16 +125,9 @@ Stop hook でタスク完了時のフィードバックを自動収集し、CLAU
 ./scripts/generate_improvements.sh
 ```
 
-## 品質基準
-
-- Biome でコードスタイル統一
-- dependency-cruiser でアーキテクチャ検証
-- TDD でテスト駆動開発
-
 ## 技術スタック
 
 - **コア**: Claude Code プラグインシステム
+- **AI 連携**: tmux ペイン経由（Codex/Cursor/Gemini CLI）
 - **リンター**: Biome（Rust製、ESLint+Prettier代替）
 - **依存関係検証**: dependency-cruiser
-- **ブラウザ自動化**: Playwright
-- **ドキュメント参照**: Context7 MCP
