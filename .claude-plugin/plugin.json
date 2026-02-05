@@ -5,6 +5,9 @@
   "author": {
     "name": "sizukutamago"
   },
+  "repository": "https://github.com/sizukutamago/dev-tools-plugin",
+  "homepage": "https://github.com/sizukutamago/dev-tools-plugin",
+  "license": "MIT",
   "keywords": [
     "ai-collaboration",
     "codex",
