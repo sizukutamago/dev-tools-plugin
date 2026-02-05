@@ -1,7 +1,7 @@
 ---
 name: codex-collab
 description: Chat with Codex via tmux for pair programming. Use when user wants to collaborate with Codex, get second opinion, design consultation, code review, or pair program with AI.
-version: 3.11.0
+version: 3.12.0
 ---
 
 # Codex Chat
@@ -165,6 +165,22 @@ Claude:
    - プロンプト（`›`）に戻っていない
 4. 最大待機時間を超えたらタイムアウトとして処理
 
+### 待機時間のカスタマイズ
+
+環境変数で待機時間を調整可能:
+
+| 環境変数 | 説明 | デフォルト |
+|---------|------|-----------|
+| `CODEX_WAIT_SHORT` | 短い質問の待機時間（秒） | 30 |
+| `CODEX_WAIT_LONG` | 複雑な分析の待機時間（秒） | 120 |
+| `CODEX_POLL_INTERVAL` | ポーリング間隔（秒） | 30 |
+| `CODEX_MAX_RETRIES` | 最大リトライ回数 | 5 |
+
+```bash
+# 例: 長い分析タスクでタイムアウトを延長
+export CODEX_WAIT_LONG=180
+```
+
 **タイムアウト時の対応**:
 
 | 状態 | 判定方法 | 対応 |
@@ -185,6 +201,44 @@ tmux send-keys -t :.1 C-c
 sleep 2
 tmux send-keys -t :.1 Enter
 ```
+
+### 出力抽出パターン
+
+#### 完了判定マーカー
+
+| パターン | 説明 | 判定 |
+|---------|------|------|
+| `›` プロンプト表示 | 入力待ち状態 | 完了 |
+| `Working...` 表示 | 処理中 | 未完了 |
+| コードフェンス閉じなし | 出力途中 | 未完了 |
+| 文章が途切れている | 出力途中 | 未完了 |
+
+#### 出力抽出コード例
+
+```bash
+# プロンプト復帰を待つパターン
+wait_for_prompt() {
+    local pane=$1
+    local timeout=${2:-60}
+    local elapsed=0
+
+    while [ $elapsed -lt $timeout ]; do
+        local output=$(tmux capture-pane -t "$pane" -p -S -10)
+
+        # プロンプト（›）が最終行にあれば完了
+        if echo "$output" | tail -1 | grep -q '›'; then
+            return 0
+        fi
+
+        sleep 5
+        elapsed=$((elapsed + 5))
+    done
+
+    return 124  # タイムアウト
+}
+```
+
+> **参照**: より高度なマーカーベース抽出は `tmux-ai-chat` スキルを参照
 
 ## 自動リカバリーフロー
 
@@ -224,9 +278,15 @@ tmux capture-pane -t :.1 -p -S -100
 
 ### Step 3: ペイン再作成（完全無応答時）
 
+**事前確認**: ペインが存在するか確認してから kill する
+
 ```bash
-# 1. 既存ペインを終了
-tmux kill-pane -t :.1
+# 1. ペイン存在確認（エラー回避）
+if tmux list-panes -F "#{pane_index}" | grep -q "^1$"; then
+    tmux kill-pane -t :.1
+else
+    echo "Pane not found, skipping kill" >&2
+fi
 
 # 2. 新しいペインを作成
 tmux split-window -h
@@ -242,6 +302,8 @@ sleep 5
 tmux send-keys -t :.1 "元の質問内容"
 tmux send-keys -t :.1 Enter
 ```
+
+**エラーハンドリング**: `can't find pane` エラーは無視して続行
 
 ### リカバリー判断フローチャート
 

@@ -1,7 +1,7 @@
 ---
 name: prompt-improver
 description: Collect feedback on task completion to improve prompts, CLAUDE.md, and skills. Use when the user says "improve prompts", "analyze feedback", "reflect on task", "/improve", or when Stop hook triggers for feedback collection. Enables continuous improvement loop for Claude Code configurations.
-version: 1.0.0
+version: 1.1.0
 ---
 
 # Prompt Improver
@@ -20,11 +20,33 @@ version: 1.0.0
 └─────────────────────────────────────────────────────────────┘
 ```
 
-## ワークフロー
+## アーキテクチャ
 
-### Step 1: フィードバック収集（条件付き自動）
+```
+┌────────────────────────────────────────────────────────┐
+│                  prompt-improver                        │
+├──────────────┬─────────────────┬───────────────────────┤
+│  Collection  │    Analysis     │    Recommendation     │
+│  (自動)       │   (/improve)    │   (インタラクティブ)    │
+├──────────────┼─────────────────┼───────────────────────┤
+│ Stop hook    │ analyze_        │ generate_             │
+│ collect_     │ feedback.sh     │ improvements.sh       │
+│ feedback.sh  │                 │ recommend_            │
+│              │                 │ structure.py          │
+└──────────────┴─────────────────┴───────────────────────┘
+```
 
-Stop hookでタスク完了時に**条件を判断して**収集。
+| Part | トリガー | 入力 | 出力 |
+|------|---------|------|------|
+| Collection | Stop hook（自動） | トランスクリプト | feedback/*.yaml |
+| Analysis | `/improve` | feedback/*.yaml | パターンレポート |
+| Recommendation | インタラクティブ | パターンレポート | 改善提案・適用 |
+
+---
+
+## Part 1: フィードバック収集（Collection）
+
+Stop hookでタスク完了時に**条件を判断して**自動収集。
 
 #### 収集条件（いずれかに該当する場合のみ）
 
@@ -48,9 +70,13 @@ Stop hookでタスク完了時に**条件を判断して**収集。
 3. ユーザーからの指摘（あれば）
 4. 改善の示唆
 
-### Step 2: フィードバック分析（/improve）
+---
 
-蓄積されたフィードバックを分析:
+## Part 2: フィードバック分析（Analysis）
+
+`/improve` コマンドで起動。蓄積されたフィードバックをパターン分析。
+
+### 統計・パターン分析
 
 ```bash
 # 統計表示
@@ -63,7 +89,7 @@ Stop hookでタスク完了時に**条件を判断して**収集。
 ./scripts/analyze_feedback.sh --target CLAUDE.md
 ```
 
-### Step 2.5: 構造改善候補の抽出
+### 構造改善候補の抽出
 
 フィードバックパターンから、新スキル作成や既存スキル分割の推奨を生成。
 
@@ -87,9 +113,13 @@ python3 ~/.claude/skills/prompt-improver/scripts/recommend_structure.py
 - 新スキル推奨 → 「作成する / 保留する」を確認
 - 分割推奨 → 「分割する / 既存に追記で済ませる」を確認
 
-### Step 3: 改善提案・適用
+---
 
-分析結果から具体的な改善案を生成:
+## Part 3: 改善提案（Recommendation）
+
+分析結果から具体的な改善案を生成し、インタラクティブに適用。
+
+### 改善案の生成と適用
 
 ```bash
 # 改善提案生成

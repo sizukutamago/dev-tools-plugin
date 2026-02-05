@@ -9,7 +9,7 @@ dev-tools-plugin/
 ├── .claude-plugin/          # プラグインメタデータ
 ├── commands/                # コマンド定義（1種）
 │   └── improve.md
-├── skills/                  # スキル実装（10種）
+├── skills/                  # スキル実装（11種）
 │   ├── tmux-ai-chat/       # tmux AI チャット基盤
 │   ├── ai-research/        # Gemini との調査連携
 │   ├── codex-collab/       # Codex との設計相談
@@ -18,6 +18,7 @@ dev-tools-plugin/
 │   ├── dependency-cruiser/ # アーキテクチャ検証
 │   ├── prompt-improver/    # プロンプト改善
 │   ├── shell-debug/        # シェルスクリプトデバッグ
+│   ├── ui-design-patterns/ # UI 設計パターン・アクセシビリティ
 │   ├── verified-commit/    # 検証付きコミット
 │   └── web-requirements/   # 要件定義（Swarm パターン）
 ├── scripts/                 # セットアップスクリプト
@@ -59,6 +60,12 @@ dev-tools-plugin/
 | スキル | 説明 | トリガー例 |
 |--------|------|-----------|
 | web-requirements | Swarm パターンで要件定義・ユーザーストーリー生成 | 「要件定義して」「ユーザーストーリー」 |
+
+### UI/デザイン
+
+| スキル | 説明 | トリガー例 |
+|--------|------|-----------|
+| ui-design-patterns | コンポーネント設計・レイアウト・アクセシビリティ | 「フォーム設計」「レイアウト作成」「a11y 対応」 |
 
 ## コーディング規約
 
