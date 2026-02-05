@@ -11,7 +11,7 @@
       "name": "dev-tools-plugin",
       "source": "./",
       "description": "開発効率化ツール集。AI連携、コード品質、プロンプト改善を提供。",
-      "version": "2.0.0",
+      "version": "2.1.0",
       "category": "productivity",
       "tags": ["ai-collaboration", "code-quality", "japanese"]
     }
