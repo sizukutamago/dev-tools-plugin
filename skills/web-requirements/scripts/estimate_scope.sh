@@ -44,44 +44,44 @@ EXCLUDE_DIRS=(
     "vendor"
 )
 
-# 拡張子パターンを生成
-build_find_pattern() {
-    local patterns=""
+# Run find with safe arguments (avoids eval injection)
+# Uses process substitution to return file list
+safe_find() {
+    local dir="$1"
+    local -a args=("$dir")
+
+    # Add exclude patterns
+    for exclude_dir in "${EXCLUDE_DIRS[@]}"; do
+        args+=(-path "*/${exclude_dir}/*" -prune -o)
+    done
+
+    # Add type and extension patterns
+    args+=(-type f \()
+    local first=true
     for ext in "${EXTENSIONS[@]}"; do
-        if [[ -z "$patterns" ]]; then
-            patterns="-name '*.${ext}'"
+        if $first; then
+            args+=(-name "*.${ext}")
+            first=false
         else
-            patterns="$patterns -o -name '*.${ext}'"
+            args+=(-o -name "*.${ext}")
         fi
     done
-    echo "$patterns"
-}
+    args+=(\) -print)
 
-# 除外パターンを生成
-build_exclude_pattern() {
-    local patterns=""
-    for dir in "${EXCLUDE_DIRS[@]}"; do
-        patterns="$patterns -path '*/${dir}/*' -prune -o"
-    done
-    echo "$patterns"
+    find "${args[@]}" 2>/dev/null
 }
 
 # ファイル数を計算
 count_files() {
     local dir="$1"
-    local exclude_pattern=$(build_exclude_pattern)
-    local find_pattern=$(build_find_pattern)
-
-    eval "find '$dir' $exclude_pattern -type f \( $find_pattern \) -print" 2>/dev/null | wc -l | tr -d ' '
+    safe_find "$dir" | wc -l | tr -d ' '
 }
 
 # LOC を計算
 count_loc() {
     local dir="$1"
-    local exclude_pattern=$(build_exclude_pattern)
-    local find_pattern=$(build_find_pattern)
-
-    local files=$(eval "find '$dir' $exclude_pattern -type f \( $find_pattern \) -print" 2>/dev/null)
+    local files
+    files=$(safe_find "$dir")
 
     if [[ -z "$files" ]]; then
         echo "0"
@@ -160,6 +160,12 @@ detect_mode() {
 # メイン処理
 main() {
     local dir="$TARGET_DIR"
+
+    # 入力検証: ダッシュで始まるパスは find オプションと誤解される可能性がある
+    if [[ "$dir" == -* ]]; then
+        echo "Error: Directory path cannot start with '-': $dir" >&2
+        exit 1
+    fi
 
     # ディレクトリの存在確認
     if [[ ! -d "$dir" ]]; then

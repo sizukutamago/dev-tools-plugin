@@ -9,10 +9,20 @@ set -euo pipefail
 # Parse context from argument
 CONTEXT="${1:-}"
 
-# Extract values from context string
+# Extract values from context string (BSD grep compatible)
 extract_value() {
     local key="$1"
-    echo "$CONTEXT" | grep -oP "${key}=\K[^;]*" 2>/dev/null || echo ""
+    local pattern="${key}="
+    local value=""
+
+    # Use parameter expansion to extract value (pure bash, no grep -P)
+    if [[ "$CONTEXT" == *"${pattern}"* ]]; then
+        # Extract everything after key=
+        value="${CONTEXT#*${pattern}}"
+        # Extract everything before the next ;
+        value="${value%%;*}"
+    fi
+    echo "$value"
 }
 
 TERM_PROGRAM="$(extract_value 'TERM_PROGRAM')"

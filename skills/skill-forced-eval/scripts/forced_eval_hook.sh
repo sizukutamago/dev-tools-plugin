@@ -16,10 +16,11 @@ SKILLS_DIR="$PLUGIN_ROOT/skills"
 build_skill_list() {
     local skills=""
 
-    # Find all SKILL.md files, excluding this hook's own SKILL.md
+    # Find all SKILL.md files, excluding auto-hook skills
     while IFS= read -r skill_file; do
-        # Skip skill-forced-eval itself
-        if [[ "$skill_file" == *"/skill-forced-eval/"* ]]; then
+        # Skip auto-hook skills (not user-invocable)
+        if [[ "$skill_file" == *"/skill-forced-eval/"* ]] || \
+           [[ "$skill_file" == *"/notify-hooks/"* ]]; then
             continue
         fi
 
@@ -66,8 +67,11 @@ build_skill_list() {
         done < "$skill_file"
 
         # Add to list if both name and description found
+        # Skip AUTO-HOOK skills (not user-invocable)
         if [[ -n "$name" && -n "$description" ]]; then
-            skills+="- ${name}: ${description}"$'\n'
+            if [[ "$description" != *"[AUTO-HOOK]"* ]]; then
+                skills+="- ${name}: ${description}"$'\n'
+            fi
         fi
     done < <(find "$SKILLS_DIR" -name "SKILL.md" -type f 2>/dev/null | sort)
 

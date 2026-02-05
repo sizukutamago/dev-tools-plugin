@@ -4,7 +4,7 @@
 #
 # Environment variables:
 #   CLAUDE_NOTIFY=0      Disable notifications
-#   CLAUDE_NOTIFY_SOUND  Notification sound (default: "default")
+#   CLAUDE_NOTIFY_SOUND  Notification sound (default: system default)
 
 set -euo pipefail
 
@@ -19,7 +19,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # Default values
 TITLE="${TITLE:-Claude Code}"
 MESSAGE="${MESSAGE:-}"
-SOUND="${CLAUDE_NOTIFY_SOUND:-default}"
+SOUND="${CLAUDE_NOTIFY_SOUND:-}"
 WITH_FOCUS="${1:-}"
 
 # Find terminal-notifier (PATH issues in hooks environment)
@@ -45,19 +45,90 @@ get_bundle_id() {
     esac
 }
 
-# Capture context for focus-terminal.sh
+# Capture context for focus-terminal.sh (sanitized for shell safety)
 capture_context() {
     local context=""
-    context+="TERM_PROGRAM=${TERM_PROGRAM:-};"
-    context+="BUNDLE_ID=$(get_bundle_id);"
+
+    # Sanitize values: remove dangerous characters (;'"`$\)
+    sanitize() {
+        echo "$1" | tr -d ";\'\"\`\$\\\\"
+    }
+
+    local term_prog
+    term_prog="$(sanitize "${TERM_PROGRAM:-}")"
+    local bundle_id
+    bundle_id="$(sanitize "$(get_bundle_id)")"
+    local tmux_pane
+    tmux_pane="$(sanitize "${TMUX_PANE:-}")"
+
+    context="TERM_PROGRAM=${term_prog};BUNDLE_ID=${bundle_id};"
 
     # tmux context if available
     if [[ -n "${TMUX:-}" ]]; then
-        context+="TMUX_PANE=${TMUX_PANE:-};"
-        context+="TMUX_SESSION=$(tmux display-message -p '#{session_name}' 2>/dev/null || echo '');"
+        local tmux_session
+        tmux_session="$(sanitize "$(tmux display-message -p '#{session_name}' 2>/dev/null || echo '')")"
+        context+="TMUX_PANE=${tmux_pane};TMUX_SESSION=${tmux_session};"
     fi
 
     echo "$context"
+}
+
+# Send notification via terminal-notifier
+send_with_terminal_notifier() {
+    local notifier="$1"
+    local args=(
+        -title "$TITLE"
+        -message "$MESSAGE"
+    )
+
+    # Add sound if specified
+    if [[ -n "$SOUND" ]]; then
+        args+=(-sound "$SOUND")
+    fi
+
+    # Add click-to-focus if requested
+    if [[ "$WITH_FOCUS" == "--with-focus" ]]; then
+        local bundle_id
+        bundle_id="$(get_bundle_id)"
+        local context
+        context="$(capture_context)"
+
+        # Base64 encode context to prevent injection
+        local encoded_context
+        encoded_context="$(echo -n "$context" | base64)"
+
+        args+=(-activate "$bundle_id")
+        # Use a wrapper that decodes base64 safely
+        # - Pass both context and script path as positional args (avoids path injection)
+        # - Use printf instead of echo for portability
+        # - base64 -D for macOS, -d for Linux (try -D first as this is macOS-focused)
+        args+=(-execute "bash -c 'ctx=\$(printf %s \"\$1\" | base64 -D 2>/dev/null || printf %s \"\$1\" | base64 -d); exec bash \"\$2\" \"\$ctx\"' -- '$encoded_context' '$SCRIPT_DIR/focus-terminal.sh'")
+    fi
+
+    "$notifier" "${args[@]}" 2>/dev/null || true
+}
+
+# Send notification via osascript (fallback)
+send_with_osascript() {
+    # Use heredoc with argv to safely pass variables (prevents injection)
+    if [[ -n "$SOUND" ]]; then
+        osascript - "$TITLE" "$MESSAGE" "$SOUND" <<'APPLESCRIPT'
+on run argv
+    set theTitle to item 1 of argv
+    set theMessage to item 2 of argv
+    set theSound to item 3 of argv
+    display notification theMessage with title theTitle sound name theSound
+end run
+APPLESCRIPT
+    else
+        osascript - "$TITLE" "$MESSAGE" <<'APPLESCRIPT'
+on run argv
+    set theTitle to item 1 of argv
+    set theMessage to item 2 of argv
+    display notification theMessage with title theTitle
+end run
+APPLESCRIPT
+    fi
 }
 
 # Send notification
@@ -66,27 +137,9 @@ send_notification() {
     notifier="$(find_notifier)"
 
     if [[ -n "$notifier" ]]; then
-        local args=(
-            -title "$TITLE"
-            -message "$MESSAGE"
-            -sound "$SOUND"
-        )
-
-        # Add click-to-focus if requested
-        if [[ "$WITH_FOCUS" == "--with-focus" ]]; then
-            local bundle_id
-            bundle_id="$(get_bundle_id)"
-            local context
-            context="$(capture_context)"
-
-            args+=(-activate "$bundle_id")
-            args+=(-execute "bash '$SCRIPT_DIR/focus-terminal.sh' '$context'")
-        fi
-
-        "$notifier" "${args[@]}"
+        send_with_terminal_notifier "$notifier"
     else
-        # Fallback to osascript (no click-to-focus support)
-        osascript -e "display notification \"$MESSAGE\" with title \"$TITLE\" sound name \"$SOUND\""
+        send_with_osascript
     fi
 }
 
