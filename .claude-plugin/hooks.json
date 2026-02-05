@@ -1,5 +1,19 @@
 {
+  "$schema": "https://raw.githubusercontent.com/anthropics/claude-code/main/schemas/hooks.json",
+  "description": "Combined hooks for dev-tools-plugin",
   "hooks": {
+    "UserPromptSubmit": [
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash ${CLAUDE_PLUGIN_ROOT}/skills/skill-forced-eval/scripts/forced_eval_hook.sh",
+            "timeout": 5000
+          }
+        ]
+      }
+    ],
     "PreToolUse": [
       {
         "matcher": "Write|Edit|MultiEdit",
