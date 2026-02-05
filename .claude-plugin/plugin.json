@@ -1,7 +1,7 @@
 {
   "name": "dev-tools-plugin",
-  "version": "2.0.0",
-  "description": "開発効率化ツール集。AI連携（Codex/Cursor/Gemini）、コード品質（Biome/dependency-cruiser）、プロンプト改善を提供。",
+  "version": "2.1.0",
+  "description": "開発効率化ツール集。AI連携（Codex/Cursor/Gemini）、コード品質（Biome/dependency-cruiser）、要件定義（web-requirements）、プロンプト改善を提供。",
   "author": {
     "name": "sizukutamago"
   },
@@ -16,7 +16,10 @@
     "biome",
     "dependency-cruiser",
     "prompt-improvement",
+    "requirements",
+    "user-stories",
     "tmux",
     "japanese"
-  ]
+  ],
+  "hooks": "./skills/web-requirements/assets/hooks/requirements_hooks.json"
 }
