@@ -47,6 +47,25 @@
             "command": "test -f docs/requirements/user-stories.md && python3 ${CLAUDE_PLUGIN_ROOT}/skills/web-requirements/scripts/validate_user_stories.py docs/requirements/user-stories.md --strict || true",
             "timeout": 30000,
             "onError": "warn"
+          },
+          {
+            "type": "command",
+            "command": "bash ${CLAUDE_PLUGIN_ROOT}/skills/notify-hooks/scripts/notify_stop.sh",
+            "timeout": 5000,
+            "onError": "ignore"
+          }
+        ]
+      }
+    ],
+    "Notification": [
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash ${CLAUDE_PLUGIN_ROOT}/skills/notify-hooks/scripts/notify_notification.sh",
+            "timeout": 5000,
+            "onError": "ignore"
           }
         ]
       }
