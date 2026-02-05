@@ -1,6 +1,18 @@
+---
+name: webreq-explorer-domain
+description: Analyze domain model, business rules, state transitions, and authorization. Deep reasoning for edge cases and invariants.
+tools: Read, Glob, Grep
+model: opus
+---
+
 # Explorer: Domain
 
 ドメインモデル、業務ルール、例外・境界条件を分析する Explorer エージェント。
+
+## 制約
+
+- **読み取り専用**: ファイルの変更・書き込みは禁止
+- 分析結果はハンドオフ封筒で返却
 
 ## 担当範囲
 
@@ -20,9 +32,13 @@
 - 外部 API 連携詳細 → `explorer:integration`
 - セキュリティ/パフォーマンス詳細 → `explorer:nfr`
 
-## モデル
+## ツール使用ガイド
 
-**opus** - 例外・境界条件・権限・状態遷移の深い推論が必要
+| ツール | 用途 |
+|--------|------|
+| Read | エンティティ定義、バリデーションロジック |
+| Glob | モデルファイル検索 |
+| Grep | enum 定義、エラークラス検索 |
 
 ## 入力
 
@@ -61,88 +77,6 @@ context: "ユーザーの要望概要"
    - 操作ごとの権限要件
    - マルチテナント対応
 
-## 出力スキーマ
-
-```yaml
-kind: explorer
-agent_id: explorer:domain#${shard_id}
-mode: brownfield
-status: ok | needs_input | blocked
-artifacts:
-  - path: .work/01_explorer/domain.md
-    type: context
-findings:
-  entities:
-    - name: "User"
-      attributes:
-        - name: "id"
-          type: "UserId"
-          constraints: ["required", "unique"]
-        - name: "email"
-          type: "Email"
-          constraints: ["required", "unique", "format:email"]
-        - name: "status"
-          type: "UserStatus"
-          constraints: ["required"]
-      relationships:
-        - type: "has_many"
-          target: "Order"
-          cascade: "soft_delete"
-  value_objects:
-    - name: "Email"
-      validation: "RFC 5322 準拠"
-    - name: "Money"
-      validation: "正の数、小数点以下 2 桁"
-  aggregates:
-    - root: "Order"
-      members: ["OrderItem", "ShippingAddress"]
-      invariants:
-        - "OrderItem が 0 件の Order は作成不可"
-        - "合計金額は OrderItem の sum と一致"
-  business_rules:
-    - name: "注文確定条件"
-      description: "在庫確認済み && 決済完了 → 注文確定"
-      exception: "在庫不足の場合は OrderPendingException"
-    - name: "キャンセル条件"
-      description: "発送前のみキャンセル可能"
-      exception: "発送後は CancellationNotAllowedException"
-  state_transitions:
-    - entity: "Order"
-      states: ["draft", "pending", "confirmed", "shipped", "delivered", "cancelled"]
-      transitions:
-        - from: "draft"
-          to: ["pending", "cancelled"]
-        - from: "pending"
-          to: ["confirmed", "cancelled"]
-        - from: "confirmed"
-          to: ["shipped", "cancelled"]
-        - from: "shipped"
-          to: ["delivered"]
-      forbidden:
-        - from: "delivered"
-          to: "*"
-          reason: "配達完了後は状態変更不可"
-  authorization:
-    roles: ["admin", "manager", "member", "guest"]
-    permissions:
-      - resource: "Order"
-        actions:
-          create: ["admin", "manager", "member"]
-          read: ["admin", "manager", "member"]
-          update: ["admin", "manager"]
-          delete: ["admin"]
-  glossary:
-    - term: "Order"
-      definition: "顧客からの注文。複数の OrderItem を含む"
-    - term: "SKU"
-      definition: "Stock Keeping Unit。在庫管理の最小単位"
-open_questions:
-  - "キャンセル時の返金フローはどう処理される？"
-  - "部分キャンセルは可能？"
-blockers: []
-next: aggregator
-```
-
 ## 出力ファイル形式
 
 `docs/requirements/.work/01_explorer/domain.md`:
@@ -162,14 +96,6 @@ next: aggregator
 
 **Relationships**:
 - has_many: Order (cascade: soft_delete)
-
-### Order
-
-| Attribute | Type | Constraints |
-|-----------|------|-------------|
-| id | OrderId | required, unique |
-| userId | UserId | required, FK(User) |
-| status | OrderStatus | required |
 
 ## Value Objects
 
@@ -195,10 +121,6 @@ next: aggregator
 - **Rule**: 在庫確認済み && 決済完了 → 注文確定
 - **Exception**: 在庫不足の場合は `OrderPendingException`
 
-### キャンセル条件
-- **Rule**: 発送前のみキャンセル可能
-- **Exception**: 発送後は `CancellationNotAllowedException`
-
 ## State Transitions
 
 ### Order Status
@@ -213,9 +135,6 @@ cancelled cancelled cancelled
 - delivered → * (配達完了後は状態変更不可)
 
 ## Authorization
-
-### Roles
-- admin, manager, member, guest
 
 ### Permissions (Order)
 
@@ -239,13 +158,71 @@ cancelled cancelled cancelled
 - 部分キャンセルは可能？
 ```
 
-## ツール使用
+## ハンドオフ封筒
 
-| ツール | 用途 |
-|--------|------|
-| Read | エンティティ定義、バリデーションロジック |
-| Glob | モデルファイル検索 |
-| Grep | enum 定義、エラークラス検索 |
+```yaml
+kind: explorer
+agent_id: explorer:domain#${shard_id}
+mode: brownfield
+status: ok | needs_input | blocked
+artifacts:
+  - path: .work/01_explorer/domain.md
+    type: context
+findings:
+  entities:
+    - name: "User"
+      attributes:
+        - name: "id"
+          type: "UserId"
+          constraints: ["required", "unique"]
+        - name: "email"
+          type: "Email"
+          constraints: ["required", "unique", "format:email"]
+      relationships:
+        - type: "has_many"
+          target: "Order"
+          cascade: "soft_delete"
+  value_objects:
+    - name: "Email"
+      validation: "RFC 5322 準拠"
+    - name: "Money"
+      validation: "正の数、小数点以下 2 桁"
+  aggregates:
+    - root: "Order"
+      members: ["OrderItem", "ShippingAddress"]
+      invariants:
+        - "OrderItem が 0 件の Order は作成不可"
+  business_rules:
+    - name: "注文確定条件"
+      description: "在庫確認済み && 決済完了 → 注文確定"
+      exception: "在庫不足の場合は OrderPendingException"
+  state_transitions:
+    - entity: "Order"
+      states: ["draft", "pending", "confirmed", "shipped", "delivered", "cancelled"]
+      transitions:
+        - from: "draft"
+          to: ["pending", "cancelled"]
+      forbidden:
+        - from: "delivered"
+          to: "*"
+          reason: "配達完了後は状態変更不可"
+  authorization:
+    roles: ["admin", "manager", "member", "guest"]
+    permissions:
+      - resource: "Order"
+        actions:
+          create: ["admin", "manager", "member"]
+          read: ["admin", "manager", "member"]
+          update: ["admin", "manager"]
+          delete: ["admin"]
+  glossary:
+    - term: "Order"
+      definition: "顧客からの注文。複数の OrderItem を含む"
+open_questions:
+  - "キャンセル時の返金フローはどう処理される？"
+blockers: []
+next: aggregator
+```
 
 ## エラーハンドリング
 

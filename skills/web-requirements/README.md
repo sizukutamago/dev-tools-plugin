@@ -59,20 +59,20 @@ Web 開発の要件定義を支援するスキル。**Swarm パターン**（並
 
 | 役割 | エージェント | モデル | 責務 |
 |------|-------------|--------|------|
-| **Explorer Swarm** | `explorer:tech` | sonnet | 技術スタック、依存関係、アーキテクチャ |
-| | `explorer:domain` | **opus** | ドメインモデル、業務ルール、例外・境界条件 |
-| | `explorer:ui` | sonnet | コンポーネント構造、状態管理 |
-| | `explorer:integration` | **opus** | 外部 API、認証、データフロー、障害時設計 |
-| | `explorer:nfr` | sonnet | セキュリティ、パフォーマンス、運用 |
+| **Explorer Swarm** | `webreq-explorer-tech` | sonnet | 技術スタック、依存関係、アーキテクチャ |
+| | `webreq-explorer-domain` | **opus** | ドメインモデル、業務ルール、例外・境界条件 |
+| | `webreq-explorer-ui` | sonnet | コンポーネント構造、状態管理 |
+| | `webreq-explorer-integration` | **opus** | 外部 API、認証、データフロー、障害時設計 |
+| | `webreq-explorer-nfr` | sonnet | セキュリティ、パフォーマンス、運用 |
 | **Interviewer** | (オーケストレーター内) | - | AskUserQuestion ツール直接使用 |
-| **Planner** | `req:planner` | **opus** | ストーリーマップ構造化、依存関係判断 |
-| **Writer** | `req:writer` | sonnet | ユーザーストーリー生成 |
-| **Aggregator** | `req:aggregator` | **opus** | Swarm 結果マージ、矛盾解消 |
-| **Reviewer Swarm** | `reviewer:completeness` | haiku | 完全性（必須項目、AC 網羅性） |
-| | `reviewer:consistency` | **opus** | 一貫性（用語統一、横断的矛盾検出） |
-| | `reviewer:quality` | haiku | 品質（曖昧語、INVEST 原則） |
-| | `reviewer:testability` | haiku | テスト可能性（AC 実装可否） |
-| | `reviewer:nfr` | haiku | 非機能（セキュリティ、a11y） |
+| **Planner** | `webreq-planner` | **opus** | ストーリーマップ構造化、依存関係判断 |
+| **Writer** | `webreq-writer` | sonnet | ユーザーストーリー生成 |
+| **Aggregator** | `webreq-aggregator` | **opus** | Swarm 結果マージ、矛盾解消 |
+| **Reviewer Swarm** | `webreq-reviewer-completeness` | haiku | 完全性（必須項目、AC 網羅性） |
+| | `webreq-reviewer-consistency` | **opus** | 一貫性（用語統一、横断的矛盾検出） |
+| | `webreq-reviewer-quality` | haiku | 品質（曖昧語、INVEST 原則） |
+| | `webreq-reviewer-testability` | haiku | テスト可能性（AC 実装可否） |
+| | `webreq-reviewer-nfr` | haiku | 非機能（セキュリティ、a11y） |
 
 ## 参照ファイル
 

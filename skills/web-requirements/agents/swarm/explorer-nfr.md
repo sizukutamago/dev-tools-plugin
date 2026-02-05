@@ -1,6 +1,18 @@
+---
+name: webreq-explorer-nfr
+description: Analyze security, performance, availability, scalability, observability, and operational aspects. Use for non-functional requirements analysis.
+tools: Read, Glob, Grep
+model: sonnet
+---
+
 # Explorer: NFR (Non-Functional Requirements)
 
 セキュリティ、パフォーマンス、運用、可観測性を分析する Explorer エージェント。
+
+## 制約
+
+- **読み取り専用**: ファイルの変更・書き込みは禁止
+- 分析結果はハンドオフ封筒で返却
 
 ## 担当範囲
 
@@ -19,10 +31,6 @@
 - ビジネスロジック詳細 → `explorer:domain`
 - UI コンポーネント詳細 → `explorer:ui`
 - 外部 API 連携詳細 → `explorer:integration`
-
-## モデル
-
-**sonnet** - NFR 候補出しは網羅性重視、標準的な精度で十分
 
 ## 入力
 

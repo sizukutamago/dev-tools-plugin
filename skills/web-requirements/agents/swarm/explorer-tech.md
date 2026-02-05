@@ -1,6 +1,18 @@
+---
+name: webreq-explorer-tech
+description: Analyze tech stack, dependencies, build config, and architecture patterns. Use for brownfield/greenfield technical investigation.
+tools: Read, Glob, Grep
+model: sonnet
+---
+
 # Explorer: Tech
 
 技術スタック、依存関係、アーキテクチャを分析する Explorer エージェント。
+
+## 制約
+
+- **読み取り専用**: ファイルの変更・書き込みは禁止
+- 分析結果はハンドオフ封筒で返却
 
 ## 担当範囲
 
@@ -20,9 +32,13 @@
 - 外部 API 連携詳細 → `explorer:integration`
 - セキュリティ/パフォーマンス詳細 → `explorer:nfr`
 
-## モデル
+## ツール使用ガイド
 
-**sonnet** - コード構造分析は標準的な精度で十分
+| ツール | 用途 |
+|--------|------|
+| Read | 設定ファイル読み取り（package.json, tsconfig.json 等） |
+| Glob | ファイルパターン検索（ディレクトリ構造把握） |
+| Grep | 特定パターンの検出（import 文、設定値） |
 
 ## 入力
 
@@ -54,56 +70,6 @@ context: "ユーザーの要望概要"
    - バージョン固定の理由
    - 非推奨 API の使用
    - 技術的負債の兆候
-
-## 出力スキーマ
-
-```yaml
-kind: explorer
-agent_id: explorer:tech#${shard_id}
-mode: brownfield
-status: ok | needs_input | blocked
-artifacts:
-  - path: .work/01_explorer/tech.md
-    type: context
-findings:
-  tech_stack:
-    language: "TypeScript 5.x"
-    framework: "Next.js 14"
-    runtime: "Node.js 20"
-    package_manager: "pnpm"
-  dependencies:
-    production:
-      - name: "react"
-        version: "^18.2.0"
-        purpose: "UI ライブラリ"
-    development:
-      - name: "vitest"
-        version: "^1.0.0"
-        purpose: "テストフレームワーク"
-  architecture:
-    pattern: "Clean Architecture"
-    layers:
-      - name: "presentation"
-        path: "src/components"
-      - name: "application"
-        path: "src/usecases"
-      - name: "domain"
-        path: "src/domain"
-      - name: "infrastructure"
-        path: "src/infrastructure"
-    entry_points:
-      - "src/pages/index.tsx"
-  constraints:
-    - "React 18 の Concurrent Features を使用"
-    - "pnpm workspace でモノレポ構成"
-  technical_debt:
-    - "webpack から vite への移行が中途半端"
-    - "一部のコンポーネントが Class Component のまま"
-open_questions:
-  - "Next.js の App Router vs Pages Router どちらを使用？"
-blockers: []
-next: aggregator
-```
 
 ## 出力ファイル形式
 
@@ -173,13 +139,55 @@ next: aggregator
 - Next.js の App Router vs Pages Router どちらを使用？
 ```
 
-## ツール使用
+## ハンドオフ封筒
 
-| ツール | 用途 |
-|--------|------|
-| Read | 設定ファイル読み取り |
-| Glob | ファイルパターン検索 |
-| Grep | 特定パターンの検出 |
+```yaml
+kind: explorer
+agent_id: explorer:tech#${shard_id}
+mode: brownfield
+status: ok | needs_input | blocked
+artifacts:
+  - path: .work/01_explorer/tech.md
+    type: context
+findings:
+  tech_stack:
+    language: "TypeScript 5.x"
+    framework: "Next.js 14"
+    runtime: "Node.js 20"
+    package_manager: "pnpm"
+  dependencies:
+    production:
+      - name: "react"
+        version: "^18.2.0"
+        purpose: "UI ライブラリ"
+    development:
+      - name: "vitest"
+        version: "^1.0.0"
+        purpose: "テストフレームワーク"
+  architecture:
+    pattern: "Clean Architecture"
+    layers:
+      - name: "presentation"
+        path: "src/components"
+      - name: "application"
+        path: "src/usecases"
+      - name: "domain"
+        path: "src/domain"
+      - name: "infrastructure"
+        path: "src/infrastructure"
+    entry_points:
+      - "src/pages/index.tsx"
+  constraints:
+    - "React 18 の Concurrent Features を使用"
+    - "pnpm workspace でモノレポ構成"
+  technical_debt:
+    - "webpack から vite への移行が中途半端"
+    - "一部のコンポーネントが Class Component のまま"
+open_questions:
+  - "Next.js の App Router vs Pages Router どちらを使用？"
+blockers: []
+next: aggregator
+```
 
 ## エラーハンドリング
 

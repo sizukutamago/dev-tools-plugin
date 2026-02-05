@@ -39,12 +39,20 @@ claude --plugin-dir /path/to/dev-tools-plugin
 |--------|------|-----------|
 | biome | Biome (Linter/Formatter) 設定 | 「Biome 設定」「リンター設定」 |
 | dependency-cruiser | 依存関係・アーキテクチャ検証 | 「依存関係チェック」 |
+| shell-debug | シェルスクリプト・ワンライナーのデバッグ | 「シェルデバッグ」「awk エラー」 |
+| verified-commit | 検証（lint/test）付きコミット | 「検証コミット」「verified commit」 |
 
 ### プロンプト改善
 
 | スキル | 説明 | トリガー例 |
 |--------|------|-----------|
 | prompt-improver | フィードバック収集・改善提案 | `/improve` |
+
+### 要件定義
+
+| スキル | 説明 | トリガー例 |
+|--------|------|-----------|
+| web-requirements | Swarm パターンで要件定義・ユーザーストーリー生成 | 「要件定義して」「ユーザーストーリー」 |
 
 ## コマンド
 

@@ -86,11 +86,11 @@ Web 開発の要件定義を支援する。**Swarm パターン**（並列エー
 **手順**:
 1. **並列実行**: 5 つの Explorer エージェントを Task ツールで同時起動
    ```
-   Task(explorer:tech, shard=X)  ──┐
-   Task(explorer:domain, shard=X) ─┼─→ 並列
-   Task(explorer:ui, shard=X)     ─┤
-   Task(explorer:integration, shard=X)
-   Task(explorer:nfr, shard=X)   ──┘
+   Task(webreq-explorer-tech, shard=X)  ──┐
+   Task(webreq-explorer-domain, shard=X) ─┼─→ 並列
+   Task(webreq-explorer-ui, shard=X)     ─┤
+   Task(webreq-explorer-integration, shard=X)
+   Task(webreq-explorer-nfr, shard=X)   ──┘
    ```
 2. 各エージェントは担当範囲のみを分析し、ハンドオフ封筒形式で出力
 3. **Aggregator 呼び出し**: Two-step Reduce で統合
@@ -172,7 +172,7 @@ Web 開発の要件定義を支援する。**Swarm パターン**（並列エー
 **入力**: questions.md、context_unified.md
 
 **手順**:
-1. Task ツールで `req:planner` エージェントを起動（model: opus）
+1. Task ツールで `webreq-planner` エージェントを起動（model: opus）
 2. Epic → Feature → Story の階層構造を設計
 3. 依存関係と優先度を判断
 4. MVP スコープを定義
@@ -197,7 +197,7 @@ Web 開発の要件定義を支援する。**Swarm パターン**（並列エー
 **入力**: story_map.md、context_unified.md
 
 **手順**:
-1. Task ツールで `req:writer` エージェントを起動（model: sonnet）
+1. Task ツールで `webreq-writer` エージェントを起動（model: sonnet）
 2. 各 Story を「As a / I want / So that」形式に変換
 3. Acceptance Criteria を Gherkin 形式（Given/When/Then）で記述
 4. 失敗系 AC を各 Story に最低 1 つ追加
@@ -224,11 +224,11 @@ Web 開発の要件定義を支援する。**Swarm パターン**（並列エー
 **手順**:
 1. **並列実行**: 5 つの Reviewer エージェントを Task ツールで同時起動
    ```
-   Task(reviewer:completeness) ──┐
-   Task(reviewer:consistency)  ──┼─→ 並列
-   Task(reviewer:quality)      ──┤
-   Task(reviewer:testability)  ──┤
-   Task(reviewer:nfr)          ──┘
+   Task(webreq-reviewer-completeness) ──┐
+   Task(webreq-reviewer-consistency)  ──┼─→ 並列
+   Task(webreq-reviewer-quality)      ──┤
+   Task(webreq-reviewer-testability)  ──┤
+   Task(webreq-reviewer-nfr)          ──┘
    ```
 2. 各 Reviewer は担当観点のみをチェックし、指摘を重大度（P0/P1/P2）で分類
 3. **Aggregator 呼び出し**: 指摘を統合し、重複を排除
@@ -334,6 +334,11 @@ Web 開発の要件定義を支援する。**Swarm パターン**（並列エー
 
 ## ハンドオフ封筒
 
+> **ID 規約の注意**:
+> - **Task 呼び出し名**: frontmatter `name`（例: `webreq-explorer-tech`）を使用
+> - **封筒 agent_id**: 内部トラッキング用の安定ID（例: `explorer:tech#shard-frontend`）
+> - この2つは別物。agent_id は集計互換のため変更しない。
+
 エージェント間の契約として、以下のスキーマで出力を統一:
 
 ```yaml
@@ -372,10 +377,10 @@ Swarm エージェントは**必ず並列**で起動する:
 
 ```markdown
 # 正しい例（並列）
-Task(explorer:tech) と Task(explorer:domain) と ... を同時に呼び出す
+Task(webreq-explorer-tech) と Task(webreq-explorer-domain) と ... を同時に呼び出す
 
 # 間違い例（逐次）
-Task(explorer:tech) の完了を待ってから Task(explorer:domain) を呼び出す
+Task(webreq-explorer-tech) の完了を待ってから Task(webreq-explorer-domain) を呼び出す
 ```
 
 ---

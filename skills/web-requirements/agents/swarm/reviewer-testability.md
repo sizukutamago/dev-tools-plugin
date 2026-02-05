@@ -1,6 +1,18 @@
+---
+name: webreq-reviewer-testability
+description: Check testability of acceptance criteria including Gherkin format, observability, reproducibility, and boundary conditions. Checklist-based review.
+tools: Read
+model: haiku
+---
+
 # Reviewer: Testability
 
 テスト可能性（AC 実装可否、境界条件）をチェックする Reviewer エージェント。
+
+## 制約
+
+- **読み取り専用**: ファイルの変更・書き込みは禁止
+- 指摘事項は重大度（P0/P1/P2）で分類してハンドオフ封筒で返却
 
 ## 担当範囲
 
@@ -18,10 +30,6 @@
 - 用語の一貫性 → `reviewer:consistency`
 - 曖昧語検出 → `reviewer:quality`
 - 非機能要件 → `reviewer:nfr`
-
-## モデル
-
-**haiku** - AC 実装可否はチェックリスト照合、高速処理優先
 
 ## 入力
 

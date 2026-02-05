@@ -9,14 +9,17 @@ dev-tools-plugin/
 ├── .claude-plugin/          # プラグインメタデータ
 ├── commands/                # コマンド定義（1種）
 │   └── improve.md
-├── skills/                  # スキル実装（7種）
+├── skills/                  # スキル実装（10種）
 │   ├── tmux-ai-chat/       # tmux AI チャット基盤
 │   ├── ai-research/        # Gemini との調査連携
 │   ├── codex-collab/       # Codex との設計相談
 │   ├── cursor-collab/      # Cursor Agent との設計相談
 │   ├── biome/              # Linting/Formatting 設定
 │   ├── dependency-cruiser/ # アーキテクチャ検証
-│   └── prompt-improver/    # プロンプト改善
+│   ├── prompt-improver/    # プロンプト改善
+│   ├── shell-debug/        # シェルスクリプトデバッグ
+│   ├── verified-commit/    # 検証付きコミット
+│   └── web-requirements/   # 要件定義（Swarm パターン）
 ├── scripts/                 # セットアップスクリプト
 │   └── setup-ai-collab.sh  # AI CLI 設定インストール
 ├── biome/                   # Biome 設定テンプレート
@@ -42,12 +45,20 @@ dev-tools-plugin/
 |--------|------|-----------|
 | biome | Biome (Linter/Formatter) 設定 | 「Biome 設定」「リンター設定」 |
 | dependency-cruiser | 依存関係・アーキテクチャ検証 | 「依存関係チェック」 |
+| shell-debug | シェルスクリプト・ワンライナーのデバッグ | 「シェルデバッグ」「awk エラー」 |
+| verified-commit | 検証（lint/test）付きコミット | 「検証コミット」「verified commit」 |
 
 ### プロンプト改善
 
 | スキル | 説明 | トリガー例 |
 |--------|------|-----------|
 | prompt-improver | フィードバック収集・改善提案 | `/improve` |
+
+### 要件定義
+
+| スキル | 説明 | トリガー例 |
+|--------|------|-----------|
+| web-requirements | Swarm パターンで要件定義・ユーザーストーリー生成 | 「要件定義して」「ユーザーストーリー」 |
 
 ## コーディング規約
 
@@ -124,6 +135,49 @@ Stop hook でタスク完了時のフィードバックを自動収集し、CLAU
 # 改善提案生成
 ./scripts/generate_improvements.sh
 ```
+
+## web-requirements について
+
+### 概要
+
+- Swarm パターン（並列エージェント）で網羅的な要件定義
+- 出力: ユーザーストーリー + Gherkin 形式 AC（Given/When/Then）
+
+### ワークフロー
+
+1. **Phase 0**: モード判定（greenfield/brownfield）
+2. **Phase 1**: Explorer Swarm（5並列）→ 技術・ドメイン・UI・連携・NFR
+3. **Phase 2**: Interviewer（AskUserQuestion ツール直接使用）
+4. **Phase 3**: Planner（ストーリーマップ構造化）
+5. **Phase 4**: Writer（ユーザーストーリー生成）
+6. **Phase 5**: Reviewer Swarm（5並列）→ 品質チェック
+7. **Phase 6**: Gate 判定（P0: Blocker / P1: Major / P2: Minor）
+
+### 使用例
+
+```
+「認証機能の要件を定義して」
+「決済機能にクーポン適用を追加したい」
+```
+
+### 出力先
+
+- 中間成果物: `docs/requirements/.work/`（`.gitignore` 設定済み）
+- 最終成果物: `docs/requirements/user-stories.md`
+
+※ このリポジトリにサンプルあり（実行時に上書きされる点に注意）
+
+### エージェント構成（推奨モデル）
+
+| カテゴリ | モデル | 役割 |
+|---------|--------|------|
+| Explorer (5) | sonnet×3, opus×2 | コードベース分析 |
+| Planner | opus | ストーリーマップ構造化 |
+| Writer | sonnet | ユーザーストーリー生成 |
+| Reviewer (5) | haiku×4, opus×1 | 品質チェック |
+| Aggregator | opus | Swarm 結果統合 |
+
+※ モデル配分は SKILL.md の設計に基づく推奨値。詳細は `skills/web-requirements/SKILL.md` を参照。
 
 ## 技術スタック
 

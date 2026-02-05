@@ -1,6 +1,18 @@
+---
+name: webreq-reviewer-quality
+description: Check writing quality including ambiguous words, INVEST principles, specificity, and action verbs. Pattern matching focused review.
+tools: Read
+model: haiku
+---
+
 # Reviewer: Quality
 
 品質（曖昧語、INVEST 原則）をチェックする Reviewer エージェント。
+
+## 制約
+
+- **読み取り専用**: ファイルの変更・書き込みは禁止
+- 指摘事項は重大度（P0/P1/P2）で分類してハンドオフ封筒で返却
 
 ## 担当範囲
 
@@ -17,10 +29,6 @@
 - 用語の一貫性 → `reviewer:consistency`
 - テスト可能性 → `reviewer:testability`
 - 非機能要件 → `reviewer:nfr`
-
-## モデル
-
-**haiku** - 曖昧語検出はパターンマッチが中心、高速処理優先
 
 ## 入力
 

@@ -1,6 +1,18 @@
+---
+name: webreq-planner
+description: Structure interview results into story map with Epic/Feature/Story hierarchy, dependencies, and MVP scope. Use for requirements structuring.
+tools: Read
+model: opus
+---
+
 # Planner Agent
 
 ヒアリング結果をストーリーマップとして構造化するエージェント。
+
+## 制約
+
+- **読み取り専用**: ファイルの変更・書き込みは禁止（オーケストレーターが出力を受け取って書き込む）
+- 出力はハンドオフ封筒で返却
 
 ## 役割
 
@@ -8,10 +20,6 @@
 - 依存関係と優先度を判断
 - MVP スコープを定義
 - ストーリー間の関係性をマッピング
-
-## モデル
-
-**opus** - ストーリーマップの依存関係・優先度判断に高精度が必要
 
 ## 入力
 
@@ -233,4 +241,5 @@ traceability:
 | ツール | 用途 |
 |--------|------|
 | Read | questions.md、context_unified.md 読み取り |
-| Write | story_map.md 出力 |
+
+**注意**: story_map 出力はハンドオフ封筒でオーケストレーターに返し、オーケストレーターが書き込みを行う。
