@@ -8,6 +8,12 @@ version: 1.1.0
 
 Claude Code と Cursor Agent が tmux でチャットするスキル。
 
+## 前提条件（実行前に確認）
+
+- **tmux セッション内**で実行すること（`tmux` コマンドが動作する環境）
+- `cursor-agent` CLI がインストール済み
+- Cursor Agent 認証済み
+
 ## 役割分担（重要）
 
 | AI | 役割 | 担当タスク |
@@ -17,50 +23,6 @@ Claude Code と Cursor Agent が tmux でチャットするスキル。
 
 **Cursor Agent に実装を依頼しないこと。** Cursor Agent から設計提案やレビューを受けて、Claude Code が実装する。
 
-## 前提条件
-
-| 条件 | 必須 | 説明 |
-|------|------|------|
-| `cursor-agent` CLI | ○ | Cursor Agent CLI（Cursor に付属） |
-| Cursor 認証 | ○ | `cursor-agent login` または Cursor アカウント |
-| `tmux` | ○ | `brew install tmux` |
-| tmux セッション | ○ | tmux セッション内で実行すること |
-
-### 動作確認
-
-```bash
-# cursor-agent がインストールされているか確認
-which cursor-agent || echo "cursor-agent not found"
-cursor-agent --version
-```
-
-## ⚠️ セキュリティ注意
-
-**Cursor Agent は外部 AI サービスです。以下を送信しないこと:**
-- API キー、パスワード、認証情報
-- 社外秘・機密情報
-- 個人情報（PII）
-
-## アーキテクチャ
-
-**重要**: Cursor Agent はバックグラウンドプロセスではなく、**別ペイン**で起動する。
-
-```
-┌─────────────────────┬─────────────────────┐
-│                     │                     │
-│   Claude Code       │   Cursor Agent      │
-│   (メインペイン)    │   (サブペイン)      │
-│                     │                     │
-│   実装作業          │   相談・レビュー    │
-│                     │                     │
-└─────────────────────┴─────────────────────┘
-```
-
-これにより:
-- 両方の出力をリアルタイムで確認可能
-- ユーザーが手動で Cursor Agent とやり取りすることも可能
-- セッション終了時にペインを閉じるだけで済む
-
 ## セットアップ
 
 ### Cursor Agent ペイン作成
@@ -68,7 +30,7 @@ cursor-agent --version
 現在のウィンドウを水平分割し、右側ペインで Cursor Agent を起動:
 
 ```bash
-# 3つの Bash コマンドを順番に実行（&& で連結しないこと）
+# 3つの Bash コマンドを順番に実行（send-keys は && で連結しないこと）
 tmux split-window -h
 tmux send-keys "cursor-agent"
 tmux send-keys Enter
@@ -76,7 +38,8 @@ tmux send-keys Enter
 
 - `split-window -h`: 水平分割（左右に分かれる）
 - 新しいペインがアクティブになるが、Claude Code は元のペインで継続
-- **重要**: `&&` で連結せず、別々の Bash コマンドとして実行すること
+- **重要**: `tmux send-keys` は `&&` で連結せず、別々の Bash コマンドとして実行すること
+  - `sleep && tmux capture-pane` のような組み合わせは OK
 
 ### ペイン番号の確認
 
@@ -262,28 +225,3 @@ sleep 2
 tmux send-keys -t :.1 Enter  # 新しいプロンプト待ち
 ```
 
-## 関連スキル
-
-| スキル | 用途 | 使い分け |
-|--------|------|----------|
-| **tmux-ai-chat** | tmux 操作の共通基盤 | 全ての AI 連携で使用可能 |
-| **ai-research** | Web 検索・調査 | 情報収集・出典確認が必要な場合 |
-| **codex-collab** | Codex との設計相談 | OpenAI Codex を使いたい場合 |
-| **cursor-collab** | Cursor Agent との設計相談 | Cursor Agent を使いたい場合 |
-
-### 他スキルとの連携
-
-調査結果を受けて設計相談する場合:
-
-1. `ai-research` で Gemini に調査依頼 → RESEARCH MEMO 作成
-2. `cursor-collab` で Cursor Agent に設計相談（RESEARCH MEMO を引用）
-
-```
-User: "JWT vs セッション認証について調査して、その後 Cursor Agent と設計相談したい"
-
-Claude:
-1. ai-research で Gemini に調査依頼
-2. RESEARCH MEMO を受け取る
-3. cursor-collab で Cursor Agent に「この調査結果を踏まえて、どちらを採用すべき？」
-4. Cursor Agent のアドバイスを受けて実装
-```

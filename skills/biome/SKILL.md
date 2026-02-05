@@ -1,21 +1,24 @@
 ---
 name: biome
 description: Use when setting up linting and formatting for TypeScript/JavaScript projects. Provides Biome configuration patterns, rule explanations, and best practices.
+version: 1.0.0
 ---
 
 # Biome Linting & Formatting
 
 TypeScript/JavaScript プロジェクトの Linting・Formatting 設定ガイドライン。
 
-## Overview
+## 前提条件
 
-Biome は高速な Linter/Formatter で、ESLint + Prettier の代替として使用できる。
+- `biome` CLI がインストール済み（`bun add -D @biomejs/biome` または `npm install -D @biomejs/biome`）
+- TypeScript/JavaScript プロジェクト
 
-**利点:**
-- 高速（Rust製）
-- 設定が簡単
-- ESLint + Prettier の統合不要
-- import 自動整理
+## ワークフロー
+
+1. **設定ファイル作成**: プロジェクトルートに `biome.json` を作成
+2. **ルール適用**: 下記の推奨設定をベースにカスタマイズ
+3. **実行**: `bunx biome check --write .` でフォーマット＋リント修正
+4. **CI 連携**: `bunx biome check .` で検証（--write なし）
 
 ## 推奨設定
 
@@ -172,67 +175,24 @@ function process<T>(data: T) { ... }
 }
 ```
 
-## VSCode 連携
+## エラーハンドリング
 
-`.vscode/settings.json`:
+| エラー | 原因 | 対応 |
+|--------|------|------|
+| `Cannot format` | 構文エラーがある | 構文エラーを先に修正 |
+| `Configuration file not found` | biome.json がない | `bunx biome init` で作成 |
+| `Unknown rule` | 古いバージョン | biome をアップグレード |
 
-```json
-{
-  "editor.formatOnSave": true,
-  "editor.defaultFormatter": "biomejs.biome",
-  "editor.codeActionsOnSave": {
-    "quickfix.biome": "explicit",
-    "source.organizeImports.biome": "explicit"
-  }
-}
+## 使用例
+
+```bash
+# 全ファイルをチェック＆修正
+bunx biome check --write .
+
+# 特定ディレクトリのみ
+bunx biome check --write src/
+
+# CI用（修正なし、エラー検出のみ）
+bunx biome check .
 ```
 
-## lefthook 連携
-
-`lefthook.yml`:
-
-```yaml
-pre-commit:
-  commands:
-    lint-fix:
-      glob: "*.{js,ts,tsx,json}"
-      run: bunx biome check --write {staged_files}
-      stage_fixed: true
-```
-
-## トラブルシューティング
-
-### "Cannot format" エラー
-
-構文エラーがある場合、フォーマットに失敗する。まず構文エラーを修正。
-
-### 特定ファイルを除外したい
-
-```json
-{
-  "files": {
-    "ignore": ["path/to/exclude/**"]
-  }
-}
-```
-
-### ルールを部分的に無効化
-
-```typescript
-// biome-ignore lint/suspicious/noExplicitAny: 外部ライブラリの型定義が不十分
-const data: any = externalLib.getData();
-```
-
-## セットアップコマンド
-
-新規プロジェクトでの設定:
-
-```
-/setup-biome
-```
-
-このコマンドで：
-1. 既存設定の確認
-2. ベース設定の適用
-3. プロジェクト構成に応じた調整
-4. VSCode設定の生成（オプション）

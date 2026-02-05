@@ -8,25 +8,6 @@ version: 1.0.0
 
 tmux を使った AI チャット連携の共通基盤スキル。
 
-## 概要
-
-このスキルは、Claude Code と外部 AI（Codex、Gemini など）が tmux ペインを介して通信するための共通操作を提供します。
-
-## 前提条件
-
-| 条件 | 必須 | 説明 |
-|------|------|------|
-| `tmux` 3.0+ | ○ | `brew install tmux` または `apt install tmux` |
-| tmux セッション | ○ | tmux セッション内で実行すること |
-| bash | ○ | スクリプトは bash で動作 |
-
-## 契約（他スキルへの約束）
-
-1. **生 tmux コマンド禁止**: AI 連携スキルは `tmux_ai.sh` を使用すること
-2. **マーカー方式**: 出力抽出は `send --wrap` + `capture --between` を使用
-3. **マーカーフォーマット**: `__TMUX_AI_START__:<id>__` / `__TMUX_AI_END__:<id>__`
-4. **エラーコード統一**: 下記のコードに従う
-
 ## スクリプト: tmux_ai.sh
 
 ### 場所
@@ -186,13 +167,3 @@ if ! response=$(tmux_ai.sh capture --pane "$pane" --between "$id" --wait-ms 6000
 fi
 ```
 
-## 関連スキル
-
-| スキル | 用途 |
-|--------|------|
-| codex-collab | Codex との設計相談・レビュー |
-| ai-research | Gemini との調査・リサーチ |
-
-## トラブルシュート
-
-詳細は `references/troubleshoot.md` を参照。

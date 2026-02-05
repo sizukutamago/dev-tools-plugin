@@ -8,6 +8,12 @@ version: 3.11.0
 
 Claude Code と Codex が tmux でチャットするスキル。
 
+## 前提条件（実行前に確認）
+
+- **tmux セッション内**で実行すること（`tmux` コマンドが動作する環境）
+- `codex` CLI がインストール済み
+- Codex 認証済み（`codex login` または `OPENAI_API_KEY`）
+
 ## 役割分担（重要）
 
 | AI | 役割 | 担当タスク |
@@ -17,35 +23,6 @@ Claude Code と Codex が tmux でチャットするスキル。
 
 **Codex に実装を依頼しないこと。** Codex から設計提案やレビューを受けて、Claude Code が実装する。
 
-## 前提条件
-
-| 条件 | 必須 | 説明 |
-|------|------|------|
-| `codex` CLI | ○ | `npm install -g @openai/codex` |
-| Codex 認証 | ○ | `codex login` または `OPENAI_API_KEY` |
-| `tmux` | ○ | `brew install tmux` |
-| tmux セッション | ○ | tmux セッション内で実行すること |
-
-## アーキテクチャ
-
-**重要**: Codex はバックグラウンドプロセスではなく、**別ペイン**で起動する。
-
-```
-┌─────────────────────┬─────────────────────┐
-│                     │                     │
-│   Claude Code       │   Codex             │
-│   (メインペイン)    │   (サブペイン)      │
-│                     │                     │
-│   実装作業          │   相談・レビュー    │
-│                     │                     │
-└─────────────────────┴─────────────────────┘
-```
-
-これにより:
-- 両方の出力をリアルタイムで確認可能
-- ユーザーが手動で Codex とやり取りすることも可能
-- セッション終了時にペインを閉じるだけで済む
-
 ## セットアップ
 
 ### Codex ペイン作成
@@ -53,7 +30,7 @@ Claude Code と Codex が tmux でチャットするスキル。
 現在のウィンドウを水平分割し、右側ペインで Codex を起動:
 
 ```bash
-# 3つの Bash コマンドを順番に実行（&& で連結しないこと）
+# 3つの Bash コマンドを順番に実行（send-keys は && で連結しないこと）
 tmux split-window -h
 tmux send-keys "codex"
 tmux send-keys Enter
@@ -61,7 +38,8 @@ tmux send-keys Enter
 
 - `split-window -h`: 水平分割（左右に分かれる）
 - 新しいペインがアクティブになるが、Claude Code は元のペインで継続
-- **重要**: `&&` で連結せず、別々の Bash コマンドとして実行すること
+- **重要**: `tmux send-keys` は `&&` で連結せず、別々の Bash コマンドとして実行すること
+  - `sleep && tmux capture-pane` のような組み合わせは OK
 
 ### ペイン番号の確認
 
@@ -70,6 +48,8 @@ tmux list-panes -F "#{pane_index}: #{pane_current_command}"
 ```
 
 通常、Claude Code が pane 0 または 1、Codex が pane 1 または 2 になる。
+
+**重要**: 以降のコマンド例では `:.1` を使用しているが、**実際のペイン番号に置き換えること**。`list-panes` の結果で Codex が動作しているペイン番号を確認し、`:.1` → `:.2` などに適宜変更する。
 
 ## チャット
 
@@ -336,27 +316,3 @@ sleep 2
 tmux send-keys -t :.1 Enter  # 新しいプロンプト待ち
 ```
 
-## 関連スキル
-
-| スキル | 用途 | 使い分け |
-|--------|------|----------|
-| **tmux-ai-chat** | tmux 操作の共通基盤 | 全ての AI 連携で使用可能 |
-| **ai-research** | Web 検索・調査 | 情報収集・出典確認が必要な場合 |
-| **codex-collab** | 設計相談・レビュー | アーキテクチャ・実装方針の相談 |
-
-### ai-research との連携
-
-調査結果を受けて設計相談する場合:
-
-1. `ai-research` で Gemini に調査依頼 → RESEARCH MEMO 作成
-2. `codex-collab` で Codex に設計相談（RESEARCH MEMO を引用）
-
-```
-User: "JWT vs セッション認証について調査して、その後設計相談したい"
-
-Claude:
-1. ai-research で Gemini に調査依頼
-2. RESEARCH MEMO を受け取る
-3. codex-collab で Codex に「この調査結果を踏まえて、どちらを採用すべき？」
-4. Codex のアドバイスを受けて実装
-```

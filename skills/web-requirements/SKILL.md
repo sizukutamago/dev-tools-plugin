@@ -19,10 +19,6 @@ Web 開発の要件定義を支援する。**Swarm パターン**（並列エー
 
 ## アーキテクチャ
 
-### Swarm パターンの採用理由
-
-単一エージェントでは観点の抜け漏れが発生しやすい。複数の専門エージェントを並列実行し、Two-step Reduce でマージすることで網羅性を担保。
-
 ```
 ┌─────────────────────────────────────────────────────────────────┐
 │                    Orchestrator (SKILL.md)                      │
@@ -60,25 +56,6 @@ Web 開発の要件定義を支援する。**Swarm パターン**（並列エー
 │                    user-stories.md                              │
 └─────────────────────────────────────────────────────────────────┘
 ```
-
-### エージェント一覧
-
-| 役割 | エージェント | モデル | 責務 |
-|------|-------------|--------|------|
-| **Explorer Swarm** | `explorer:tech` | sonnet | 技術スタック、依存関係、アーキテクチャ |
-| | `explorer:domain` | **opus** | ドメインモデル、業務ルール、例外・境界条件 |
-| | `explorer:ui` | sonnet | コンポーネント構造、状態管理 |
-| | `explorer:integration` | **opus** | 外部 API、認証、データフロー、障害時設計 |
-| | `explorer:nfr` | sonnet | セキュリティ、パフォーマンス、運用 |
-| **Interviewer** | (オーケストレーター内) | - | AskUserQuestion ツール直接使用 |
-| **Planner** | `req:planner` | **opus** | ストーリーマップ構造化、依存関係判断 |
-| **Writer** | `req:writer` | sonnet | ユーザーストーリー生成 |
-| **Aggregator** | `req:aggregator` | **opus** | Swarm 結果マージ、矛盾解消 |
-| **Reviewer Swarm** | `reviewer:completeness` | haiku | 完全性（必須項目、AC 網羅性） |
-| | `reviewer:consistency` | **opus** | 一貫性（用語統一、横断的矛盾検出） |
-| | `reviewer:quality` | haiku | 品質（曖昧語、INVEST 原則） |
-| | `reviewer:testability` | haiku | テスト可能性（AC 実装可否） |
-| | `reviewer:nfr` | haiku | 非機能（セキュリティ、a11y） |
 
 ## ワークフロー
 
@@ -450,14 +427,3 @@ Claude:
 4. Phase 3-6: 同上
 ```
 
----
-
-## 参照ファイル
-
-| ファイル | 内容 |
-|---------|------|
-| `references/user_stories_format.md` | 出力フォーマット仕様 |
-| `references/quality_rules.md` | 品質ルール（曖昧語・禁則） |
-| `references/handoff_schema.md` | ハンドオフ封筒スキーマ |
-| `references/scope_manifest.md` | スコープ分割仕様 |
-| `references/interview_questions.md` | AskUserQuestion 用質問テンプレート |

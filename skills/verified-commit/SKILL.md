@@ -212,27 +212,3 @@ Claude:
 | テスト失敗 | 機能の破壊 | テストまたは実装を修正 |
 | shellcheck警告 | シェルスクリプト問題 | 警告に従って修正 |
 
-## 関連スキル
-
-| スキル | 用途 | 連携 |
-|--------|------|------|
-| `/verified-commit` | 検証付きコミット | メイン |
-| `/shell-debug` | シェルスクリプト検証失敗時 | shellcheck警告の詳細調査 |
-| `/tdd-integration` | テスト駆動開発 | full検証モードと連携 |
-
-## カスタマイズ
-
-プロジェクトごとに検証コマンドをカスタマイズする場合は、プロジェクトの `CLAUDE.md` に記載:
-
-```markdown
-## Commit検証設定
-
-### quick検証
-- `npm run lint`
-- `npm run typecheck`
-
-### full検証
-- `npm run lint`
-- `npm run typecheck`
-- `npm run test:unit`
-```

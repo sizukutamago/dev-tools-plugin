@@ -1,6 +1,7 @@
 ---
 name: prompt-improver
 description: Collect feedback on task completion to improve prompts, CLAUDE.md, and skills. Use when the user says "improve prompts", "analyze feedback", "reflect on task", "/improve", or when Stop hook triggers for feedback collection. Enables continuous improvement loop for Claude Code configurations.
+version: 1.0.0
 ---
 
 # Prompt Improver

@@ -1,48 +1,24 @@
 ---
 name: dependency-cruiser
 description: Use when setting up architecture dependency validation for TypeScript/JavaScript projects. Provides Clean Architecture and DDD dependency direction rules.
+version: 1.0.0
 ---
 
 # dependency-cruiser アーキテクチャ検証
 
 TypeScript/JavaScript プロジェクトの依存方向ルールを検証するためのガイドライン。
 
-## Overview
+## 前提条件
 
-dependency-cruiser は、コードベースの依存関係を分析し、アーキテクチャルールへの違反を検出するツール。
+- `dependency-cruiser` がインストール済み（`bun add -D dependency-cruiser` または `npm install -D dependency-cruiser`）
+- TypeScript/JavaScript プロジェクト
 
-**利点:**
-- Clean Architecture/DDD の依存方向を自動検証
-- 循環依存の検出
-- 不正な依存パターンの早期発見
-- CI/CD での継続的なアーキテクチャ検証
+## ワークフロー
 
-## 基本概念: 依存方向
-
-Clean Architecture では、依存は **外側から内側** に向かう：
-
-```
-┌────────────────────────────────────────────────────────┐
-│  Presentation (routes)                                  │
-│    ↓ 依存OK                                            │
-│  ┌────────────────────────────────────────────────┐    │
-│  │  Application (usecases)                         │    │
-│  │    ↓ 依存OK                                    │    │
-│  │  ┌────────────────────────────────────────┐    │    │
-│  │  │  Domain (services)                      │    │    │
-│  │  │    ↓ 依存OK                            │    │    │
-│  │  │  ┌────────────────────────────────┐    │    │    │
-│  │  │  │  Infrastructure (repositories) │    │    │    │
-│  │  │  └────────────────────────────────┘    │    │    │
-│  │  └────────────────────────────────────────┘    │    │
-│  └────────────────────────────────────────────────┘    │
-└────────────────────────────────────────────────────────┘
-```
-
-**禁止される依存:**
-- `repositories` → `services` (内側から外側への依存)
-- `services` → `routes` (内側から外側への依存)
-- 循環依存
+1. **設定ファイル作成**: プロジェクトルートに `.dependency-cruiser.cjs` を作成
+2. **ルール定義**: 下記の推奨設定をベースにカスタマイズ
+3. **実行**: `bunx depcruise src` で検証（設定ファイルは自動検出）
+4. **CI 連携**: package.json に `"lint:deps": "depcruise src"` 追加
 
 ## 推奨設定
 
@@ -181,58 +157,27 @@ React/Vue 等のフロントエンドプロジェクト向け：
 },
 ```
 
-## トラブルシューティング
+## エラーハンドリング
 
-### "no-circular" が誤検出される
+| エラー | 原因 | 対応 |
+|--------|------|------|
+| `no-circular` 誤検出 | 型のみのインポート | `import type` に変更 |
+| パスが見つからない | 設定のパスパターン不一致 | `from.path`/`to.path` を確認 |
+| モジュール解決エラー | TypeScript パス設定 | `tsPreCompilationDeps: true` を確認 |
 
-型のみのインポートは `import type` を使うことで循環を回避できる場合がある：
+## 使用例
 
-```typescript
-// ❌ 循環の原因になりうる
-import { User } from './user';
+```bash
+# 依存関係を検証（設定ファイル自動検出）
+bunx depcruise src
 
-// ✅ 型のみなら循環しない
-import type { User } from './user';
+# 設定ファイルを明示指定
+bunx depcruise src --config .dependency-cruiser.cjs
+
+# HTML レポート生成
+bunx depcruise src --output-type html > dependency-report.html
+
+# 違反のみ表示
+bunx depcruise src --output-type err
 ```
 
-### 特定のパスを除外したい
-
-`pathNot` で除外パターンを指定：
-
-```javascript
-{
-  name: 'no-services-to-routes',
-  from: {
-    path: 'src/services',
-    pathNot: 'src/services/shared/' // shared は除外
-  },
-  to: { path: 'src/routes' },
-},
-```
-
-### 重要度の調整
-
-移行期間中は `severity: 'warn'` に緩和可能：
-
-```javascript
-{
-  name: 'no-routes-to-services-directly',
-  severity: 'warn', // error → warn に緩和
-  // ...
-}
-```
-
-## セットアップコマンド
-
-新規プロジェクトでの設定:
-
-```
-/setup-depcruise
-```
-
-このコマンドで：
-1. 既存設定の確認
-2. プロジェクト構成の分析（routes, services, repositories 等の検出）
-3. 適切なプリセット選択（base / ddd / frontend）
-4. package.json にスクリプト追加
-5. lefthook への統合（オプション）
