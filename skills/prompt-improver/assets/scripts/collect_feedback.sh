@@ -146,7 +146,7 @@ import json, sys
 for line in open('$TRANSCRIPT_PATH', encoding='utf-8'):
     try:
         d = json.loads(line.strip())
-        if d.get('type') == 'human':
+        if d.get('type') in ('human', 'user'):
             content = d.get('message', {}).get('content', '')
             if isinstance(content, list):
                 for c in content:
@@ -154,11 +154,13 @@ for line in open('$TRANSCRIPT_PATH', encoding='utf-8'):
                         text = c.get('text', '')
                         if text.strip():
                             # system-reminder や hook 出力を除外
-                            if not text.startswith('<system-reminder>') and not text.startswith('<command-'):
+                            skip_prefixes = ('<system-reminder>', '<command-', '<local-command-', '<task-notification>', 'Base directory for this skill:', 'This session is being continued')
+                            if not any(text.startswith(p) for p in skip_prefixes):
                                 print(text[:100])
                                 sys.exit(0)
             elif isinstance(content, str) and content.strip():
-                if not content.startswith('<system-reminder>') and not content.startswith('<command-'):
+                skip_prefixes = ('<system-reminder>', '<command-', '<local-command-', '<task-notification>', 'Base directory for this skill:', 'This session is being continued')
+                if not any(content.startswith(p) for p in skip_prefixes):
                     print(content[:100])
                     sys.exit(0)
     except:
