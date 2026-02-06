@@ -10,8 +10,8 @@
     {
       "name": "dev-tools-plugin",
       "source": "./",
-      "description": "開発効率化ツール集。AI連携、コード品質、UI設計パターン、プロンプト改善を提供。",
-      "version": "2.3.0",
+      "description": "開発効率化ツール集。AI連携、コード品質、UI設計パターン、Hooks（通知/スキル強制評価）、プロンプト改善を提供。",
+      "version": "2.4.0",
       "category": "productivity",
       "tags": ["ai-collaboration", "code-quality", "japanese"]
     }
