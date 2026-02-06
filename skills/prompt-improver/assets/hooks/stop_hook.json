@@ -8,7 +8,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "~/.claude/scripts/collect_feedback.sh"
+            "command": "~/.claude/scripts/dev-tools/prompt-improver/collect_feedback.sh"
           }
         ]
       }
