@@ -8,7 +8,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash ${CLAUDE_PLUGIN_ROOT}/skills/skill-forced-eval/scripts/forced_eval_hook.sh",
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/skills/skill-forced-eval/scripts/forced_eval_hook.sh\"",
             "timeout": 5000
           }
         ]
@@ -20,7 +20,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash ${CLAUDE_PLUGIN_ROOT}/skills/web-requirements/scripts/hook_router.sh pre",
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/skills/web-requirements/scripts/hook_router.sh\" pre",
             "timeout": 10000
           }
         ]
@@ -32,7 +32,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash ${CLAUDE_PLUGIN_ROOT}/skills/web-requirements/scripts/hook_router.sh post",
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/skills/web-requirements/scripts/hook_router.sh\" post",
             "timeout": 20000
           }
         ]
@@ -44,13 +44,13 @@
         "hooks": [
           {
             "type": "command",
-            "command": "test -f docs/requirements/user-stories.md && python3 ${CLAUDE_PLUGIN_ROOT}/skills/web-requirements/scripts/validate_user_stories.py docs/requirements/user-stories.md --strict || true",
+            "command": "test -f docs/requirements/user-stories.md && python3 \"${CLAUDE_PLUGIN_ROOT}/skills/web-requirements/scripts/validate_user_stories.py\" docs/requirements/user-stories.md --strict || true",
             "timeout": 30000,
             "onError": "warn"
           },
           {
             "type": "command",
-            "command": "bash ${CLAUDE_PLUGIN_ROOT}/skills/notify-hooks/scripts/notify_stop.sh",
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/skills/notify-hooks/scripts/notify_stop.sh\"",
             "timeout": 5000,
             "onError": "ignore"
           }
@@ -63,7 +63,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash ${CLAUDE_PLUGIN_ROOT}/skills/notify-hooks/scripts/notify_notification.sh",
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/skills/notify-hooks/scripts/notify_notification.sh\"",
             "timeout": 5000,
             "onError": "ignore"
           }
