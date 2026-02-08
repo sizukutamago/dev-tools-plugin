@@ -68,7 +68,7 @@ python3 "${SKILL_DIR}/scripts/extract_session_trace.py" "$TRANSCRIPT"
 
 | カテゴリ | 内容 |
 |---------|------|
-| `session_metrics` | ターン数、ツール使用数、変更ファイル数 |
+| `metrics` | ターン数、ツール使用数、変更ファイル数 |
 | `tool_timeline` | ツール使用の時系列（ターン、ツール名、入力サマリー、成功/失敗） |
 | `search_paths` | 検索・探索の軌跡（Grep/Glob/Read の対象パス） |
 | `changed_files` | 変更ファイル一覧（Write/Edit経由） |
@@ -134,7 +134,7 @@ AI の行動に問題があった箇所を特定。
 2. AI が各プロンプトに回答し、見落としを洗い出す
 3. 「このタスクで別の3つのアプローチを挙げ、なぜ採用しなかったか述べよ」
 
-**重要:** 反事実推論は最低3つの観点（セキュリティ/テスト/ベテランエンジニア視点）を必ず実施。
+**重要:** 反事実推論は `references/counterfactual_prompts.md` の必須プロンプト3つ（ベテランエンジニア視点/テスト観点/代替案検討）を必ず実施。変更内容に応じて条件付きプロンプトを追加選択。
 
 ### 2d. Try（次回の改善アクション）
 
@@ -159,9 +159,11 @@ AskUserQuestion を使用して振り返り結果を確認:
 
 ### 3a. KPT レポート保存
 
+Phase 2 の分析結果を `kpt_schema.md` に準拠した YAML 形式で生成し、パイプ経由で保存:
+
 ```bash
-# ~/.claude/hurikaeri/ に YAML 形式で保存
-"${SKILL_DIR}/scripts/persist_learnings.sh"
+# KPT YAML を生成して標準入力経由で保存
+echo "$KPT_YAML_CONTENT" | "${SKILL_DIR}/scripts/persist_learnings.sh"
 ```
 
 保存先: `~/.claude/hurikaeri/kpt-YYYYMMDD-NNN.yaml`
@@ -181,7 +183,7 @@ AskUserQuestion で連携するか確認:
 **変換ルール:**
 - `problem` → `issues` （type は problem.category からマッピング）
 - `try` → `proposed_actions`
-- `session_metrics` → `stats`
+- `metrics` → `stats`
 
 ### 3d. 振り返りサマリー表示
 

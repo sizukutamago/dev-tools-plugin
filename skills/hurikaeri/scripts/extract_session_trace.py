@@ -65,8 +65,13 @@ HIGH_SCORE_PATTERNS = {
 }
 
 
-def extract_text_from_content(content) -> str:
-    """メッセージコンテンツからテキストを抽出"""
+def extract_text_from_content(content, include_tool_results: bool = True) -> str:
+    """メッセージコンテンツからテキストを抽出
+
+    Args:
+        content: メッセージの content フィールド
+        include_tool_results: tool_result のテキストも含めるか（修正検出では False 推奨）
+    """
     if isinstance(content, str):
         return content
     if isinstance(content, list):
@@ -75,7 +80,7 @@ def extract_text_from_content(content) -> str:
             if isinstance(item, dict):
                 if item.get("type") == "text":
                     texts.append(item.get("text", ""))
-                elif item.get("type") == "tool_result":
+                elif item.get("type") == "tool_result" and include_tool_results:
                     result_content = item.get("content", "")
                     if isinstance(result_content, str):
                         texts.append(result_content)
@@ -165,6 +170,7 @@ def process_session_trace(jsonl_path: str) -> dict:
     errors = []
     user_corrections = []
     skills_used = defaultdict(int)
+    tool_use_id_map = {}  # tool_use_id → timeline_entry（エラー紐付け用）
 
     # メトリクス
     user_turns = 0
@@ -193,13 +199,7 @@ def process_session_trace(jsonl_path: str) -> dict:
                     assistant_turns += 1
             last_entry_type = entry_type
 
-            # スキル使用検出
-            if isinstance(content, str):
-                skill_match = re.search(
-                    r"<command-name>/([^<]+)</command-name>", content
-                )
-                if skill_match:
-                    skills_used[skill_match.group(1)] += 1
+            # スキル使用検出（Skill ツール呼び出しで統一、<command-name> は二重カウント防止のため除外）
 
             # ツール使用の検出・タイムライン記録
             if entry_type == "assistant" and isinstance(content, list):
@@ -212,15 +212,18 @@ def process_session_trace(jsonl_path: str) -> dict:
 
                         input_summary = summarize_tool_input(tool_name, tool_input)
 
-                        tool_timeline.append(
-                            {
-                                "turn": turn_number,
-                                "line": line_number,
-                                "tool": tool_name,
-                                "input_summary": input_summary[:100],
-                                "success": True,  # デフォルト、後でエラーで上書き
-                            }
-                        )
+                        tool_use_id = item.get("id", "")
+                        timeline_entry = {
+                            "turn": turn_number,
+                            "line": line_number,
+                            "tool": tool_name,
+                            "input_summary": input_summary[:100],
+                            "success": True,  # デフォルト、後でエラーで上書き
+                        }
+                        tool_timeline.append(timeline_entry)
+                        # tool_use_id → timeline_entry のマッピング（エラー紐付け用）
+                        if tool_use_id:
+                            tool_use_id_map[tool_use_id] = timeline_entry
 
                         # 検索パスの記録
                         if tool_name in ("Grep", "Glob", "Read"):
@@ -275,13 +278,18 @@ def process_session_trace(jsonl_path: str) -> dict:
                                         "message": error_content[:200],
                                     }
                                 )
-                                # 直前のツール使用を失敗に更新
-                                if tool_timeline:
+                                # tool_use_id で正確にツール使用を紐付け
+                                result_tool_use_id = item.get("tool_use_id", "")
+                                if result_tool_use_id and result_tool_use_id in tool_use_id_map:
+                                    tool_use_id_map[result_tool_use_id]["success"] = False
+                                elif tool_timeline:
+                                    # フォールバック: tool_use_id がない場合は直前に紐付け
                                     tool_timeline[-1]["success"] = False
 
             # ユーザー修正の検出
             if entry_type in ("user", "human"):
-                user_text = extract_text_from_content(content)
+                # tool_result を除外してユーザーのテキストのみ抽出（誤検出防止）
+                user_text = extract_text_from_content(content, include_tool_results=False)
                 # system-reminder を除外
                 if user_text.startswith("<system-reminder>"):
                     continue
@@ -325,7 +333,7 @@ def process_session_trace(jsonl_path: str) -> dict:
             "assistant_turns": assistant_turns,
             "tool_use_count": tool_use_count,
             "unique_tools": sorted(unique_tools),
-            "code_changes_count": len(changed_files),
+            "code_changes_count": len(unique_changed),  # ユニークファイル数
             "error_count": len(errors),
             "correction_count": len(user_corrections),
             "backtrack_count": len(backtrack_events),
@@ -342,7 +350,10 @@ def process_session_trace(jsonl_path: str) -> dict:
 
 def format_yaml_output(trace: dict) -> str:
     """手動で YAML 形式に変換（PyYAML 依存なし）"""
-    lines = ["session_trace:"]
+    lines = [
+        "# turn = ユーザーターン番号（ユーザー発言ごとにインクリメント）",
+        "session_trace:",
+    ]
 
     # metrics
     m = trace["metrics"]
