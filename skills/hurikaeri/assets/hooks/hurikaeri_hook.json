@@ -1,0 +1,19 @@
+{
+  "$schema": "https://raw.githubusercontent.com/anthropics/claude-code/main/schemas/hooks.json",
+  "description": "セッション終了時に振り返り提案を表示するStop hook設定例",
+  "hooks": {
+    "Stop": [
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/skills/hurikaeri/scripts/suggest_hurikaeri.sh\"",
+            "timeout": 5000,
+            "onError": "ignore"
+          }
+        ]
+      }
+    ]
+  }
+}

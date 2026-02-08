@@ -53,6 +53,12 @@
             "command": "bash \"${CLAUDE_PLUGIN_ROOT}/skills/notify-hooks/scripts/notify_stop.sh\"",
             "timeout": 5000,
             "onError": "ignore"
+          },
+          {
+            "type": "command",
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/skills/hurikaeri/scripts/suggest_hurikaeri.sh\"",
+            "timeout": 5000,
+            "onError": "ignore"
           }
         ]
       }
