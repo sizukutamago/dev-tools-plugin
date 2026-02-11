@@ -1,6 +1,6 @@
 ---
 description: "Session retrospective - review AI behavior with AI-KPT framework and counterfactual reasoning"
-version: "1.0.0"
+version: "1.1.0"
 allowed-tools:
   - Read
   - Write
@@ -102,26 +102,50 @@ AskUserQuestion で振り返り結果を確認:
 - 追加の気づき
 - 永続化の要否
 
+**重要**: Phase 3 の永続化は、ここでユーザーが明示的に承認した場合のみ実行すること。
+承認がない場合、Phase 3 は全てスキップし、サマリー表示（3e）のみ行う。
+
 ### Phase 3: Crystallize（知見の永続化）
 
-#### 3a. KPT レポート保存
+#### 3a. 永続化先の判断（必須）
+
+各 Try アイテムについて、以下の基準でプロジェクト固有かどうかを判断する:
+
+| 判断基準 | プロジェクト固有 | 汎用知識 |
+|---------|---------------|---------|
+| このプロジェクトの技術スタック固有の設定・パターン | ✅ | |
+| このプロジェクトのアーキテクチャ制約に起因する教訓 | ✅ | |
+| 一般的なプログラミングベストプラクティス | | ✅ |
+| 特定ツール(biome, React等)の汎用的な使い方 | | ✅ |
+| 言語機能の一般的なパターン | | ✅ |
+
+**永続化先の対応表:**
+- プロジェクト固有 → プロジェクトの CLAUDE.md に追記
+- 汎用知識 → 永続化しない（一般的な知識は AI が都度判断できる）
+
+**汎用知識は書かない。** AIが毎回判断できる内容をメモリに書くのは冗長。
+**MEMORY.md には書かない。** プロジェクト固有の知見は CLAUDE.md に記載する。
+
+#### 3b. KPT レポート保存
 
 ```bash
 # kpt_schema.md に準拠した YAML を生成し保存
 echo "$KPT_YAML" | bash "${CLAUDE_PLUGIN_ROOT}/skills/hurikaeri/scripts/persist_learnings.sh"
 ```
 
-#### 3b. CLAUDE.md / SKILL.md への改善追記
+#### 3c. CLAUDE.md / SKILL.md への改善追記
 
-Try で `global` スコープのアクションがあれば提案。AskUserQuestion で承認を得てから適用。
+Try で `project` スコープかつプロジェクト固有のアクションがあれば、プロジェクトの CLAUDE.md への追記を提案。
+`global` スコープのアクションがあれば、グローバル CLAUDE.md への追記を提案。
+いずれも AskUserQuestion で承認を得てから適用。
 
-#### 3c. prompt-improver 連携（オプション）
+#### 3d. prompt-improver 連携（オプション）
 
 AskUserQuestion で確認:
 - 「prompt-improver にもフィードバックを送りますか？」
 - Yes: Problem を feedback YAML に変換して `~/.claude/feedback/` に保存
 
-#### 3d. 振り返りサマリー表示
+#### 3e. 振り返りサマリー表示
 
 ```
 【セッション振り返り】
