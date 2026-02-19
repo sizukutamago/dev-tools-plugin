@@ -151,6 +151,8 @@ const path = require('path');
 
 const plan = require('./plan.json');
 const config = require('../run_meta.json');
+const createdDataPath = path.resolve(__dirname, '../../shared/created_data.json');
+const createdData = fs.existsSync(createdDataPath) ? JSON.parse(fs.readFileSync(createdDataPath, 'utf8')) : {};
 
 const AGENT_ID = plan.agentId;
 const OUTPUT_DIR = __dirname;
@@ -202,14 +204,22 @@ const ASSERTION_PATTERNS = [
   { re: /^title contains "(.+)"$/, fn: async (page, m) => (await page.title()).includes(m[1]) },
   { re: /^url contains "(.+)"$/, fn: async (page, m) => page.url().includes(m[1]) },
   { re: /^url matches "(.+)"$/, fn: async (page, m) => new RegExp(m[1]).test(page.url()) },
-  { re: /^snapshot contains "(.+)"$/, fn: async (page, m) => (await page.content()).includes(m[1]) },
-  { re: /^snapshot not contains "(.+)"$/, fn: async (page, m) => !(await page.content()).includes(m[1]) },
+  { re: /^snapshot contains "(.+)"$/, fn: async (page, m) => (await page.innerText('body').catch(() => '')).includes(m[1]) },
+  { re: /^snapshot not contains "(.+)"$/, fn: async (page, m) => !(await page.innerText('body').catch(() => '')).includes(m[1]) },
   { re: /^element enabled "(.+)"$/, fn: async (page, m) => { const el = page.getByText(m[1]); return await el.isEnabled(); } },
   { re: /^element disabled "(.+)"$/, fn: async (page, m) => { const el = page.getByText(m[1]); return !(await el.isEnabled()); } },
   { re: /^dialog appeared$/, fn: async (page, m, ctx) => ctx.dialogAppeared },
   { re: /^dialog not appeared$/, fn: async (page, m, ctx) => !ctx.dialogAppeared },
   { re: /^console has error$/, fn: async (page, m, ctx) => ctx.consoleErrors.length > 0 },
   { re: /^console has no error$/, fn: async (page, m, ctx) => ctx.consoleErrors.length === 0 },
+  { re: /^network has 4xx\/5xx$/, fn: async (page, m, ctx) => ctx.networkErrors.length > 0 },
+  { re: /^network has no 4xx\/5xx$/, fn: async (page, m, ctx) => ctx.networkErrors.length === 0 },
+  { re: /^list count > (\d+)$/, fn: async (page, m) => (await page.locator('li, tr, [role="listitem"]').count()) > parseInt(m[1]) },
+  { re: /^snapshot contains created_data\.(.+)$/, fn: async (page, m) => {
+    const val = m[1].split('.').reduce((o, k) => o?.[k], createdData);
+    if (val === undefined || val === null) return false;
+    return (await page.innerText('body').catch(() => '')).includes(String(val));
+  }},
 ];
 
 async function checkAssertion(page, expr, ctx) {
@@ -287,13 +297,13 @@ async function executeAction(page, step, ctx) {
       return { status: 'OK', method: r.method, confidence: r.confidence };
     }
     case 'verify_created': {
-      const content = await page.content();
-      return { status: content.includes(step.target) ? 'PASS' : 'FAIL' };
+      const text = await page.innerText('body').catch(() => '');
+      return { status: text.includes(step.target) ? 'PASS' : 'FAIL' };
     }
     case 'verify_list_contains': {
       await page.goto(config.base_url + step.target, { waitUntil: 'domcontentloaded' });
-      const content = await page.content();
-      return { status: content.includes(step.input) ? 'PASS' : 'FAIL' };
+      const text = await page.innerText('body').catch(() => '');
+      return { status: text.includes(step.input) ? 'PASS' : 'FAIL' };
     }
     default:
       return { status: 'UNKNOWN_ACTION', action: step.action };
@@ -326,10 +336,16 @@ async function executeAction(page, step, ctx) {
   const consoleErrors = [];
   page.on('console', msg => { if (msg.type() === 'error') consoleErrors.push({ text: msg.text(), url: page.url() }); });
 
-  let dialogAppeared = false;
-  page.on('dialog', async dialog => { dialogAppeared = true; await dialog.accept(); });
+  const networkErrors = [];
+  const baseOrigin = new URL(config.base_url).origin;
+  page.on('response', response => {
+    if (response.status() >= 400 && response.url().startsWith(baseOrigin)) {
+      networkErrors.push({ url: response.url(), status: response.status() });
+    }
+  });
 
-  const ctx = { threshold: config.confidence_threshold || 0.6, consoleErrors, dialogAppeared };
+  const ctx = { threshold: config.confidence_threshold || 0.6, consoleErrors, networkErrors, dialogAppeared: false };
+  page.on('dialog', async dialog => { ctx.dialogAppeared = true; await dialog.accept().catch(() => {}); });
   const budget = config.budgets?.[AGENT_ID] || 30;
   let actionsUsed = 0;
   let issuesFound = 0;
@@ -350,8 +366,8 @@ async function executeAction(page, step, ctx) {
 
     for (const step of seq.steps) {
       if (actionsUsed >= budget) break;
-      dialogAppeared = false;
       ctx.dialogAppeared = false;
+      ctx.networkErrors.length = 0;
 
       try {
         const result = await executeAction(page, step, ctx);

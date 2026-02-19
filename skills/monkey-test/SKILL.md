@@ -153,6 +153,10 @@ mkdir -p .work/monkey-test/{02_plans,03_execution,shared,screenshots,run}
    - Q2: ユーザー名フィールドのラベルは？ → `"Email"`, `"メールアドレス"`, `"Username"`, `"ユーザー名"`
    - Q3: パスワードフィールドのラベルは？ → `"Password"`, `"パスワード"`
    - Q4: ログイン成功の判定方法は？ → `URL 変化で判定`（url_changed）, `特定テキスト表示で判定`（text_visible）, `URL に特定パスを含むで判定`（url_contains）
+   - Q5（Q4 が `text_visible` または `url_contains` の場合のみ）: 判定に使う値は？
+     - `text_visible` の場合: 「ログイン成功後に表示されるテキストは？」（例: `"ダッシュボード"`, `"Welcome"`）
+     - `url_contains` の場合: 「ログイン成功後の URL に含まれるパスは？」（例: `"/dashboard"`, `"/home"`）
+     - `url_changed` の場合: value 不要（login_url からの変化を自動検出）
 
    続けて、ユーザー名とパスワードの実値をテキストで直接入力してもらう（機密情報のため AskUserQuestion の選択肢には載せない）。
 
@@ -178,13 +182,7 @@ mkdir -p .work/monkey-test/{02_plans,03_execution,shared,screenshots,run}
   "codebase_path": null,
   "auth": {
     "required": false,
-    "strategy": "none",
-    "login_url": null,
-    "username_field_label": null,
-    "password_field_label": null,
-    "username": null,
-    "password": null,
-    "success_indicator": null
+    "strategy": "none"
   },
   "agents": [
     "tester-workflow",
@@ -202,6 +200,39 @@ mkdir -p .work/monkey-test/{02_plans,03_execution,shared,screenshots,run}
   }
 }
 ```
+
+**auth オブジェクトの戦略別スキーマ**:
+
+| 戦略 | `required` | 追加フィールド |
+|------|-----------|-------------|
+| `none` | `false` | なし |
+| `basic` | `true` | `username`, `password` |
+| `credentials` | `true` | `login_url`, `username_field_label`, `password_field_label`, `username`, `password`, `success_indicator` |
+| `manual` | `true` | なし |
+
+`credentials` の場合の auth 例:
+```json
+{
+  "required": true,
+  "strategy": "credentials",
+  "login_url": "/login",
+  "username_field_label": "メールアドレス",
+  "password_field_label": "パスワード",
+  "username": "testuser@example.com",
+  "password": "testpass123",
+  "success_indicator": {
+    "type": "url_contains",
+    "value": "/dashboard"
+  }
+}
+```
+
+`success_indicator` の型:
+| type | value | 判定方法 |
+|------|-------|---------|
+| `url_contains` | パス文字列 | URL に value を含む |
+| `text_visible` | テキスト | ページに value のテキストが表示される |
+| `url_changed` | _(不要)_ | URL が login_url から変化した |
 
 5. Issue Registry を初期化:
 
@@ -245,10 +276,11 @@ mkdir -p .work/monkey-test/{02_plans,03_execution,shared,screenshots,run}
         ```
         戻り値を `.work/monkey-test/auth_storage_state.json` に Write する。
    - `credentials` 戦略:
-     a. ログインページに遷移:
+     a. ログインページに遷移（`login_url` が相対パスの場合は `target_url` のオリジンと結合）:
         ```
-        browser_navigate(url=auth.login_url)
+        browser_navigate(url=target_url_origin + auth.login_url)
         ```
+        ※ `login_url` が `http` で始まる場合はそのまま使用
      b. フォーム存在確認（SPA レンダリング待機）:
         ```
         browser_snapshot()
@@ -436,9 +468,10 @@ Task(
 
 1. **認証状態確認**（auth.required が true の場合）:
    - `browser_navigate(url=target_url)` でホームに遷移
-   - 認証が必要かつ URL がログインページにリダイレクトされた場合（`auth.login_url` を含む URL に遷移した場合）:
-     → Phase 1 の認証処理を再実行（セッション切れへの対応）
-   - リダイレクトされなければ認証状態は有効
+   - **credentials 戦略**: URL がログインページにリダイレクトされた場合（`auth.login_url` を含む URL に遷移した場合）→ Phase 1 の認証処理を再実行
+   - **manual 戦略**: `login_url` がないため、遷移後のページが期待と異なる場合（例: ログインフォームの存在を検出）→ ユーザーに再ログインを依頼
+   - **basic 戦略**: httpCredentials はリクエストごとに送信されるため再認証不要
+   - リダイレクト/異常が検出されなければ認証状態は有効
 
 2. **テストプラン実行**: Phase 3b と同じ実行手順（後述）で `tester-workflow` のプランを実行
 
@@ -847,7 +880,7 @@ Phase 1 の safe_mode（偵察用）とは別に、Phase 3 でも以下のガー
 ```
 Task(
   subagent_type="general-purpose",
-  prompt="agents/reporter.md の指示に従い、レポートを生成してください。\n\n実行ログ: [03_execution/ の全ファイル内容]\nIssue Registry: [shared/issue_registry.md]\nRecon データ: [01_recon_data.md の内容（Workflow Map・Site Map 含む）]\nCreated Data: [shared/created_data.json の内容（存在する場合）]\nConfig: [00_config.json]\n\n出力先: monkey-test-report.md（プロジェクトルート）",
+  prompt="agents/reporter.md の指示に従い、レポートを生成してください。\n\n実行ログ: [03_execution/ の全ファイル内容]\nIssue Registry: [shared/issue_registry.md]\nRecon データ: [01_recon_data.md の内容（Workflow Map・Site Map 含む）]\nCreated Data: [shared/created_data.json の内容（存在する場合）]\nConfig: [00_config.json（auth.username, auth.password は除外してマスクすること）]\n\n出力先: monkey-test-report.md（プロジェクトルート）",
   model="sonnet"
 )
 ```
