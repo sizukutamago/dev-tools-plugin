@@ -7,15 +7,17 @@ Claude Code プラグインとして、開発効率化ツール集を提供す�
 ```
 dev-tools-plugin/
 ├── .claude-plugin/          # プラグインメタデータ
-├── commands/                # コマンド定義（3種）
+├── commands/                # コマンド定義（4種）
 │   ├── improve.md
 │   ├── hurikaeri.md
-│   └── monkey-test.md
-├── skills/                  # スキル実装（13種）
+│   ├── monkey-test.md
+│   └── claude-collab.md
+├── skills/                  # スキル実装（14種）
 │   ├── tmux-ai-chat/       # tmux AI チャット基盤
 │   ├── ai-research/        # Gemini との調査連携
 │   ├── codex-collab/       # Codex との設計相談
 │   ├── cursor-collab/      # Cursor Agent との設計相談
+│   ├── claude-collab/      # Claude Code 対話ディベート
 │   ├── biome/              # Linting/Formatting 設定
 │   ├── dependency-cruiser/ # アーキテクチャ検証
 │   ├── hurikaeri/          # セッション振り返り（AI-KPT）
@@ -43,6 +45,7 @@ dev-tools-plugin/
 | ai-research | Gemini との調査・リサーチ | 「調査して」「リサーチして」 |
 | codex-collab | Codex との設計相談・レビュー | 「Codex と相談」「Codex にレビュー」 |
 | cursor-collab | Cursor Agent との設計相談・レビュー | 「Cursor と相談」「Cursor にレビュー」 |
+| claude-collab | Claude Code 同士の自律ディベート | 「Claude同士で議論」「ディベート」「多角的に検討」 |
 
 ### コード品質
 
@@ -141,6 +144,12 @@ Codex/Cursor/Gemini CLI が設定ファイルを読み込めるようにする:
 1. `SKILL.md` の frontmatter description は英語で記述
 2. バージョン番号を適切に更新（セマンティックバージョニング）
 3. `references/` 配下のテンプレートとの整合性を確認
+
+### monkey-test スキル固有
+
+1. **JS テンプレートの即時検証**: `cli_execution_guide.md` の test.js テンプレートを変更した場合、コードブロックを抽出して `node --check` で構文チェック + assertion 正規表現のマッチテストを実施する
+2. **クロスフェーズスキーマの事前定義**: 複数 Phase にまたがるデータ構造（auth, config, created_data 等）は、先にスキーマ定義テーブルを書いてから各 Phase の記述に入る。スキーマ不整合はレビューで最も多く指摘される問題
+3. **ファイル生成先の確認**: `.monkey-test/auth.json` や `.work/` はテスト対象プロジェクトに生成される。プラグインリポジトリとテスト対象リポジトリを混同しない
 
 ## prompt-improver について
 
