@@ -1,7 +1,7 @@
 {
   "name": "dev-tools-plugin",
-  "version": "2.5.1",
-  "description": "開発効率化ツール集。AI連携（Codex/Cursor/Gemini）、コード品質（Biome/dependency-cruiser）、要件定義（web-requirements）、セッション振り返り（hurikaeri）、Hooks（通知/スキル強制評価）、プロンプト改善を提供。",
+  "version": "2.6.0",
+  "description": "開発効率化ツール集。AI連携（Codex/Cursor/Gemini）、コード品質（Biome/dependency-cruiser）、要件定義（web-requirements）、モンキーテスト（monkey-test）、セッション振り返り（hurikaeri）、Hooks（通知/スキル強制評価）、プロンプト改善を提供。",
   "author": {
     "name": "sizukutamago"
   },
@@ -18,6 +18,8 @@
     "prompt-improvement",
     "requirements",
     "user-stories",
+    "monkey-testing",
+    "playwright",
     "hooks",
     "notifications",
     "tmux",
