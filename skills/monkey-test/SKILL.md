@@ -76,7 +76,7 @@ Task サブエージェントは Playwright にアクセスできない。
 Phase 開始前に作成する（`.gitignore` 対象）:
 
 ```
-.monkey-test/                    ← 永続認証設定（.gitignore 推奨）
+.monkey-test/                    ← プロジェクトルートに生成（要 .gitignore 登録）
 └── auth.json
 ```
 
@@ -162,7 +162,9 @@ mkdir -p .work/monkey-test/{02_plans,03_execution,shared,screenshots,run}
 
    **`basic` 選択時**: ユーザー名・パスワードをテキスト入力で確認。
 
-   **全戦略共通**: 認証設定を `.monkey-test/auth.json` に保存（次回以降の再利用のため）。ディレクトリが存在しない場合は `mkdir -p .monkey-test` で作成。
+   **全戦略共通**: 認証設定を `.monkey-test/auth.json` に保存（次回以降の再利用のため）。
+   - ディレクトリが存在しない場合は `mkdir -p .monkey-test` で作成
+   - **プロジェクトの `.gitignore` に `.monkey-test/` が含まれていなければ追加する**（平文パスワードの誤コミット防止）
    - **アクション予算プロファイル**: `smoke`（10）/ `standard`（30、デフォルト）/ `deep`（50）
 
    **予算プロファイル**:
