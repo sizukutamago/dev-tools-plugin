@@ -1,7 +1,7 @@
 ---
 name: monkey-test
 description: Orchestrate multiple AI agents with different personalities to perform monkey testing on web applications using Playwright MCP. Agents include spec-aware tester, naive user, security hunter, chaos input, and systematic explorer. Triggers on "monkey test", "monkey testing", "exploratory testing", "モンキーテスト", "自動テスト"
-version: 1.1.0
+version: 1.2.0
 ---
 
 # モンキーテストスキル
@@ -76,8 +76,14 @@ Task サブエージェントは Playwright にアクセスできない。
 Phase 開始前に作成する（`.gitignore` 対象）:
 
 ```
+.monkey-test/                    ← 永続認証設定（.gitignore 推奨）
+└── auth.json
+```
+
+```
 .work/monkey-test/
 ├── 00_config.json
+├── auth_storage_state.json      ← Phase 1 で保存（Cookie/セッション）
 ├── 01_recon_data.md
 ├── 01b_spec_context.md          (optional)
 ├── 02_plans/
@@ -126,10 +132,33 @@ mkdir -p .work/monkey-test/{02_plans,03_execution,shared,screenshots,run}
 
 1. ユーザーから対象 URL を確認（コマンド引数があればそれを使用）
 
-2. AskUserQuestion で以下を確認:
+2. **永続認証設定の検出**:
+   `.monkey-test/auth.json` が存在するか確認する。
+
+   **存在する場合**: auth.json を読み込み、AskUserQuestion で再利用を確認:
+   - 「前回の認証設定が見つかりました（戦略: {strategy}, ユーザー: {username}）。この設定を使いますか？」
+     - **使う**: auth.json の内容を `00_config.json` の auth セクションにコピー。認証質問をスキップ
+     - **設定し直す**: 初回フローへ（下記 Step 3 の認証質問を実行）
+     - **認証なしで実行**: `auth.strategy = "none"` で続行
+
+   **存在しない場合**: 初回フローへ（Step 3 の認証質問を実行）
+
+3. AskUserQuestion で以下を確認:
    - **コンテキストモード**: `url-only`（URLのみ） / `url+spec`（仕様あり） / `url+codebase`（コード解析あり）
-   - **認証**: 必要か？必要なら manual（手動ログイン）/ credentials（自動ログイン）/ basic（HTTP Basic 認証）
+   - **認証**: `none`（不要）/ `credentials`（フォームログイン）/ `basic`（HTTP Basic 認証）/ `manual`（手動ログイン）
    - **エージェント選択**: デフォルト全5種を使うか、カスタム選択するか
+
+   **`credentials` 選択時の追加質問**（別途 AskUserQuestion を実行）:
+   - Q1: ログイン URL は？ → `/login`, `/auth/signin`, `/sign-in`, Other
+   - Q2: ユーザー名フィールドのラベルは？ → `"Email"`, `"メールアドレス"`, `"Username"`, `"ユーザー名"`
+   - Q3: パスワードフィールドのラベルは？ → `"Password"`, `"パスワード"`
+   - Q4: ログイン成功の判定方法は？ → `URL 変化で判定`（url_changed）, `特定テキスト表示で判定`（text_visible）, `URL に特定パスを含むで判定`（url_contains）
+
+   続けて、ユーザー名とパスワードの実値をテキストで直接入力してもらう（機密情報のため AskUserQuestion の選択肢には載せない）。
+
+   **`basic` 選択時**: ユーザー名・パスワードをテキスト入力で確認。
+
+   **全戦略共通**: 認証設定を `.monkey-test/auth.json` に保存（次回以降の再利用のため）。ディレクトリが存在しない場合は `mkdir -p .monkey-test` で作成。
    - **アクション予算プロファイル**: `smoke`（10）/ `standard`（30、デフォルト）/ `deep`（50）
 
    **予算プロファイル**:
@@ -139,7 +168,7 @@ mkdir -p .work/monkey-test/{02_plans,03_execution,shared,screenshots,run}
    | `standard` | 30 | 40 | 通常のテスト実行 |
    | `deep` | 50 | 70 | 網羅的テスト |
 
-3. 設定を `.work/monkey-test/00_config.json` に保存:
+4. 設定を `.work/monkey-test/00_config.json` に保存:
 
 ```json
 {
@@ -150,8 +179,12 @@ mkdir -p .work/monkey-test/{02_plans,03_execution,shared,screenshots,run}
   "auth": {
     "required": false,
     "strategy": "none",
+    "login_url": null,
+    "username_field_label": null,
+    "password_field_label": null,
     "username": null,
-    "password": null
+    "password": null,
+    "success_indicator": null
   },
   "agents": [
     "tester-workflow",
@@ -170,7 +203,7 @@ mkdir -p .work/monkey-test/{02_plans,03_execution,shared,screenshots,run}
 }
 ```
 
-4. Issue Registry を初期化:
+5. Issue Registry を初期化:
 
 `.work/monkey-test/shared/issue_registry.md` に空テンプレートを書き込む:
 
@@ -199,8 +232,53 @@ mkdir -p .work/monkey-test/{02_plans,03_execution,shared,screenshots,run}
 **手順**:
 
 1. **認証処理**（auth.required が true の場合）:
-   - `manual` 戦略: ユーザーに「ブラウザでログインしてください」と伝え、完了を待つ
-   - `credentials` 戦略: ログイン URL に navigate → `browser_fill_form` で入力 → submit
+   - `manual` 戦略:
+     a. ユーザーに「ブラウザでログインしてください」と伝え、完了を待つ
+     b. ログイン完了報告後、**storageState を保存**:
+        ```javascript
+        browser_run_code({
+          code: `async (page) => {
+            const state = await page.context().storageState();
+            return JSON.stringify(state);
+          }`
+        })
+        ```
+        戻り値を `.work/monkey-test/auth_storage_state.json` に Write する。
+   - `credentials` 戦略:
+     a. ログインページに遷移:
+        ```
+        browser_navigate(url=auth.login_url)
+        ```
+     b. フォーム存在確認（SPA レンダリング待機）:
+        ```
+        browser_snapshot()
+        ```
+        フォーム要素が見つからない場合は `browser_wait_for(text=auth.username_field_label)` で最大5秒待機。
+     c. フォーム入力:
+        ```
+        browser_fill_form(fields=[
+          { name: auth.username_field_label, type: "textbox", ref: (snapshot から動的取得), value: auth.username },
+          { name: auth.password_field_label, type: "textbox", ref: (snapshot から動的取得), value: auth.password }
+        ])
+        ```
+     d. ログインボタンをスナップショットから特定してクリック:
+        ボタンラベル候補: `"ログイン"`, `"Log in"`, `"Sign in"`, `"Submit"`, `"サインイン"`
+     e. ログイン成功判定（`auth.success_indicator` に基づく）:
+        - `url_contains`: 現在 URL に `success_indicator.value` が含まれるか
+        - `text_visible`: `browser_snapshot` に `success_indicator.value` が含まれるか
+        - `url_changed`: URL が `auth.login_url` から変わったか
+     f. **storageState 保存**:
+        ```javascript
+        browser_run_code({
+          code: `async (page) => {
+            const state = await page.context().storageState();
+            return JSON.stringify(state);
+          }`
+        })
+        ```
+        戻り値を `.work/monkey-test/auth_storage_state.json` に Write する。
+        この storageState は Phase 3b の CLI 並列実行で各エージェントのブラウザコンテキストに読み込まれる。
+     g. 失敗時: 1回リトライ → それでも失敗なら `manual` 戦略にフォールバック
    - `basic` 戦略: `browser_run_code` で httpCredentials 付きコンテキストを生成:
      ```javascript
      mcp__playwright__browser_run_code({
@@ -356,9 +434,15 @@ Task(
 
 **手順**:
 
-1. **テストプラン実行**: Phase 3b と同じ実行手順（後述）で `tester-workflow` のプランを実行
+1. **認証状態確認**（auth.required が true の場合）:
+   - `browser_navigate(url=target_url)` でホームに遷移
+   - 認証が必要かつ URL がログインページにリダイレクトされた場合（`auth.login_url` を含む URL に遷移した場合）:
+     → Phase 1 の認証処理を再実行（セッション切れへの対応）
+   - リダイレクトされなければ認証状態は有効
 
-2. **created_data.json 生成**: 実行中にフォーム送信が成功した場合、作成されたデータを記録:
+2. **テストプラン実行**: Phase 3b と同じ実行手順（後述）で `tester-workflow` のプランを実行
+
+3. **created_data.json 生成**: 実行中にフォーム送信が成功した場合、作成されたデータを記録:
 
 ```json
 {
@@ -376,7 +460,7 @@ Task(
 
    保存先: `.work/monkey-test/shared/created_data.json`（JSON 正本）
 
-3. **created_data.md 生成**: ビュー用の Markdown も併存生成:
+4. **created_data.md 生成**: ビュー用の Markdown も併存生成:
 
 ```markdown
 # Created Test Data
@@ -395,7 +479,7 @@ Task(
 
    保存先: `.work/monkey-test/shared/created_data.md`
 
-4. **Recon データ差分更新**: 動的ページで発見した新要素を `01_recon_data.md` に追記:
+5. **Recon データ差分更新**: 動的ページで発見した新要素を `01_recon_data.md` に追記:
    - 動的ページ（例: `/scenarios/1`）の Interactive Elements を追加
    - Site Map に動的ページを追加（既に Interactive Discovery で追加済みなら要素のみ追記）
 
@@ -485,6 +569,10 @@ Task(
 各エージェントのテストプラン `.md` を実行可能な Node.js スクリプトに変換する。
 
 1. `.work/monkey-test/run/run_meta.json` を生成（auth, baseUrl, budgets, confidence_threshold）
+   - `auth.strategy` が `"credentials"` または `"manual"` の場合:
+     - `auth.storage_state_path` に `"../../auth_storage_state.json"` を設定
+     - `.work/monkey-test/auth_storage_state.json` が存在することを確認（存在しない場合は WARNING ログ）
+   - `auth.strategy` が `"basic"` の場合: 既存通り `username` / `password` を設定
 2. 各エージェント用ディレクトリ `run/{agent-name}/` を作成
 3. 各プラン `.md` を読み込み、テーブルをパースして `run/{agent-name}/plan.json` を生成:
    - `01_recon_data.md` の Interactive Elements から TargetRef → elementMeta を構築
@@ -779,7 +867,11 @@ Task(
 | エラー | Phase | 対応 |
 |--------|-------|------|
 | URL 到達不能 | 1 | 中断。ユーザーに URL 確認を依頼 |
-| ログイン失敗 | 1 | 1回リトライ → 手動ログイン依頼 |
+| ログイン失敗（credentials） | 1 | 1回リトライ → manual フォールバック |
+| ログインフォーム未検出 | 1 | SPA 待機5秒 → 失敗なら manual フォールバック |
+| CAPTCHA 検出 | 1 | manual にフォールバック |
+| storageState 未生成 | 3b | WARNING ログ、CLI は認証なしで続行 |
+| セッション Cookie 期限切れ | 3b | assertion fail → レポートに「認証切れ」フラグ |
 | 0ページ発見 | 1 | 中断。URL か認証を確認 |
 | Interactive Discovery でフォーム送信失敗 | 1 | 2回リトライ → 「未発見ルート」記録、次フォームへ |
 | safe_mode 該当ボタン | 1 | スキップしてログに記録 |

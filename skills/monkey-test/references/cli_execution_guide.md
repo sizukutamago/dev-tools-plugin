@@ -60,6 +60,30 @@ Basic 認証の場合:
 }
 ```
 
+credentials（フォームログイン）の場合:
+
+```json
+{
+  "auth": {
+    "strategy": "credentials",
+    "storage_state_path": "../../auth_storage_state.json"
+  }
+}
+```
+
+manual（手動ログイン）の場合:
+
+```json
+{
+  "auth": {
+    "strategy": "manual",
+    "storage_state_path": "../../auth_storage_state.json"
+  }
+}
+```
+
+`storage_state_path` は Phase 1 で保存された Playwright storageState ファイル（Cookie/localStorage）への相対パス。`run/{agent-name}/test.js` から見た相対パスで `../../auth_storage_state.json` は `.work/monkey-test/auth_storage_state.json` を指す。
+
 ### plan.json（コンパイル済みプラン形式）
 
 Phase 3b-compile でメインエージェントがプラン `.md` のテーブルをパースして生成する中間形式。
@@ -285,6 +309,16 @@ async function executeAction(page, step, ctx) {
   const ctxOptions = {};
   if (config.auth?.strategy === 'basic') {
     ctxOptions.httpCredentials = { username: config.auth.username, password: config.auth.password };
+  } else if (
+    (config.auth?.strategy === 'credentials' || config.auth?.strategy === 'manual')
+    && config.auth?.storage_state_path
+  ) {
+    const ssPath = path.resolve(__dirname, config.auth.storage_state_path);
+    if (fs.existsSync(ssPath)) {
+      ctxOptions.storageState = ssPath;
+    } else {
+      console.warn(`[WARN] storageState file not found: ${ssPath}. Running without auth.`);
+    }
   }
   const context = await browser.newContext(ctxOptions);
   const page = await context.newPage();
