@@ -7,12 +7,11 @@ Claude Code プラグインとして、開発効率化ツール集を提供す�
 ```
 dev-tools-plugin/
 ├── .claude-plugin/          # プラグインメタデータ
-├── commands/                # コマンド定義（4種）
+├── commands/                # コマンド定義（3種）
 │   ├── improve.md
 │   ├── hurikaeri.md
-│   ├── monkey-test.md
 │   └── claude-collab.md
-├── skills/                  # スキル実装（14種）
+├── skills/                  # スキル実装（13種）
 │   ├── tmux-ai-chat/       # tmux AI チャット基盤
 │   ├── ai-research/        # Gemini との調査連携
 │   ├── codex-collab/       # Codex との設計相談
@@ -25,8 +24,7 @@ dev-tools-plugin/
 │   ├── shell-debug/        # シェルスクリプトデバッグ
 │   ├── ui-design-patterns/ # UI 設計パターン・アクセシビリティ
 │   ├── verified-commit/    # 検証付きコミット
-│   ├── web-requirements/   # 要件定義（Swarm パターン）
-│   └── monkey-test/        # モンキーテスト（Playwright MCP + Swarm）
+│   └── web-requirements/   # 要件定義（Swarm パターン）
 ├── scripts/                 # セットアップスクリプト
 │   └── setup-ai-collab.sh  # AI CLI 設定インストール
 ├── biome/                   # Biome 設定テンプレート
@@ -68,12 +66,6 @@ dev-tools-plugin/
 | スキル | 説明 | トリガー例 |
 |--------|------|-----------|
 | web-requirements | Swarm パターンで要件定義・ユーザーストーリー生成 | 「要件定義して」「ユーザーストーリー」 |
-
-### テスト
-
-| スキル | 説明 | トリガー例 |
-|--------|------|-----------|
-| monkey-test | Playwright MCP + 5種 AI エージェントでモンキーテスト | `/monkey-test`「モンキーテスト」 |
 
 ### UI/デザイン
 
@@ -144,12 +136,6 @@ Codex/Cursor/Gemini CLI が設定ファイルを読み込めるようにする:
 1. `SKILL.md` の frontmatter description は英語で記述
 2. バージョン番号を適切に更新（セマンティックバージョニング）
 3. `references/` 配下のテンプレートとの整合性を確認
-
-### monkey-test スキル固有
-
-1. **JS テンプレートの即時検証**: `cli_execution_guide.md` の test.js テンプレートを変更した場合、コードブロックを抽出して `node --check` で構文チェック + assertion 正規表現のマッチテストを実施する
-2. **クロスフェーズスキーマの事前定義**: 複数 Phase にまたがるデータ構造（auth, config, created_data 等）は、先にスキーマ定義テーブルを書いてから各 Phase の記述に入る。スキーマ不整合はレビューで最も多く指摘される問題
-3. **ファイル生成先の確認**: `.monkey-test/auth.json` や `.work/` はテスト対象プロジェクトに生成される。プラグインリポジトリとテスト対象リポジトリを混同しない
 
 ## prompt-improver について
 

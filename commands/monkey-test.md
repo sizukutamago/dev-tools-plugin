@@ -1,9 +1,0 @@
----
-description: Run monkey testing with multiple AI agent personalities on a web application using Playwright MCP
-version: 1.0.0
-allowed-tools: Bash, Read, Write, Edit, Glob, Grep, Task, AskUserQuestion, mcp__playwright__browser_navigate, mcp__playwright__browser_snapshot, mcp__playwright__browser_click, mcp__playwright__browser_type, mcp__playwright__browser_fill_form, mcp__playwright__browser_select_option, mcp__playwright__browser_press_key, mcp__playwright__browser_hover, mcp__playwright__browser_take_screenshot, mcp__playwright__browser_console_messages, mcp__playwright__browser_network_requests, mcp__playwright__browser_handle_dialog, mcp__playwright__browser_evaluate, mcp__playwright__browser_wait_for, mcp__playwright__browser_navigate_back, mcp__playwright__browser_tabs, mcp__playwright__browser_close
----
-
-monkey-test スキルを実行します。`skills/monkey-test/SKILL.md` の手順に従ってください。
-
-引数がある場合はテスト対象 URL として使用してください。
