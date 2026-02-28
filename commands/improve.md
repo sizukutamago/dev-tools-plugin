@@ -1,6 +1,6 @@
 ---
 description: "Analyze feedback and generate improvement proposals for prompts and skills"
-version: "1.0.0"
+version: "1.1.0"
 allowed-tools:
   - Read
   - Write
@@ -33,10 +33,10 @@ ls -la ~/.claude/feedback/
 
 ```bash
 # 統計表示
-~/.claude/skills/prompt-improver/scripts/analyze_feedback.sh --stats
+bash "${CLAUDE_PLUGIN_ROOT}/skills/prompt-improver/scripts/analyze_feedback.sh" --stats
 
 # パターン分析
-~/.claude/skills/prompt-improver/scripts/analyze_feedback.sh
+bash "${CLAUDE_PLUGIN_ROOT}/skills/prompt-improver/scripts/analyze_feedback.sh"
 ```
 
 ### Phase 2.5: 構造改善候補の抽出
@@ -44,7 +44,7 @@ ls -la ~/.claude/feedback/
 フィードバックパターンから新スキル作成・スキル分割の推奨を生成:
 
 ```bash
-python3 ~/.claude/skills/prompt-improver/scripts/recommend_structure.py
+python3 "${CLAUDE_PLUGIN_ROOT}/skills/prompt-improver/scripts/recommend_structure.py"
 ```
 
 **出力例**:
@@ -67,7 +67,7 @@ python3 ~/.claude/skills/prompt-improver/scripts/recommend_structure.py
 改善提案を生成:
 
 ```bash
-~/.claude/skills/prompt-improver/scripts/generate_improvements.sh
+bash "${CLAUDE_PLUGIN_ROOT}/skills/prompt-improver/scripts/generate_improvements.sh"
 ```
 
 ### Phase 4: 改善適用（ユーザー確認）
@@ -77,15 +77,7 @@ AskUserQuestionを使用して、適用する改善を選択:
 - 各改善案について影響度と工数を説明
 - ユーザーが選択した改善を適用
 
-**重要: 編集先の選択**
-
-| ファイル種別 | 編集先 | 理由 |
-|-------------|--------|------|
-| skills/* | `ai-skills/skills/` リポジトリ | ソース管理され、install.sh で反映 |
-| CLAUDE.md, RULES.md 等 | `~/.claude/` 直接 | リポジトリ外のユーザー設定 |
-
-- skills を編集した場合は、最後に `cd ai-skills && ./install.sh` で反映する
-- `~/.claude/skills/` を直接編集すると、次の install.sh で上書きされるため **禁止**
+**編集先**: プラグイン内の `skills/` ディレクトリのファイルを直接編集する。
 
 ### Phase 5: フィードバック更新
 

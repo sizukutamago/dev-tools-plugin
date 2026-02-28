@@ -1,7 +1,7 @@
 ---
 name: cursor-collab
 description: Chat with Cursor Agent via tmux for pair programming. Use when user wants to collaborate with Cursor, get second opinion, design consultation, or code review.
-version: 1.1.0
+version: 1.2.0
 ---
 
 # Cursor Agent Chat
@@ -72,7 +72,7 @@ sleep 30 && tmux capture-pane -t :.1 -p -S -100
 ```
 
 - `-S -100`: スクロールバッファから過去100行を取得
-- 応答が長い場合は `sleep` の秒数を増やす（最大待機時間は下表参照）
+- 応答が長い場合は `sleep` の秒数を増やす
 - 処理中表示がある場合は追加で待機する
 
 ### Cursor Agent ペイン終了
@@ -133,9 +133,9 @@ Claude:
 
 ### 不適切な依頼例（避けること）
 
-- ❌「このコードを実装して」
-- ❌「ファイルを作成して」
-- ❌「テストを書いて」
+- 「このコードを実装して」
+- 「ファイルを作成して」
+- 「テストを書いて」
 
 ## 注意事項
 
@@ -143,7 +143,6 @@ Claude:
 - **ペイン**でインタラクティブモードを使用（バックグラウンドではない）
 - 処理中表示がある場合は追加で待機が必要
 - **`tmux send-keys` は `&&` で連結しないこと**:
-  - 特に Enter 送信（`tmux send-keys Enter`）を `&&` で連結すると送信されないことがある
   - 各 `tmux send-keys` は個別の Bash コマンドとして実行する
   - 注: `sleep && tmux capture-pane` のような非 send-keys コマンドの連結は問題ない
 
@@ -162,66 +161,8 @@ tmux paste-buffer -t :.1 -b cursor_q -d  # -d でバッファ削除
 tmux send-keys -t :.1 Enter
 ```
 
-## 待機時間の目安
+## 待機時間・リカバリー
 
-| 質問の種類 | 推奨待機時間 | 最大待機時間 | 備考 |
-|-----------|-------------|-------------|------|
-| 短い質問 | 30秒 | 60秒 | Yes/No、簡単な確認 |
-| コードレビュー | 60秒 | 120秒 | 小〜中規模のコード |
-| 設計相談 | 90秒 | 180秒 | アーキテクチャ、パターン選択 |
-| 複雑な分析 | 120秒 | 240秒 | 大規模コード、詳細な比較 |
+待機時間の目安、ポーリング戦略、タイムアウト時の対応、リカバリー手順は共通ガイドを参照:
 
-**ポーリング戦略**:
-1. 初回待機（上記の推奨待機時間）
-2. `tmux capture-pane` で出力確認
-3. 以下の場合は追加30秒待機（最大待機時間に達するまで繰り返し）:
-   - 処理中やスピナー表示中
-   - 出力が途中で終わっている（閉じ括弧・コードフェンス未完、文章が途切れている）
-   - プロンプトに戻っていない（記号は環境により異なる）
-4. 最大待機時間を超えたらタイムアウトとして処理
-
-**タイムアウト時の対応**:
-
-| 状態 | 判定方法 | 対応 |
-|------|----------|------|
-| capture出力が空 | `tmux capture-pane` の結果が空 | Enter で再プロンプト |
-| プロンプト待ち | プロンプト記号で止まっている | Enter で再プロンプト |
-| 処理中のまま固まった | 表示が変化しない | C-c で中断 → Enter |
-| 完全に無応答 | 上記すべて失敗 | Cursor Agent 再起動（ペイン終了→再作成） |
-
-```bash
-# 出力が空/プロンプト待ちの場合
-tmux send-keys -t :.1 Enter
-sleep 30
-tmux capture-pane -t :.1 -p -S -100
-
-# それでも応答がない場合（C-c で中断）
-tmux send-keys -t :.1 C-c
-sleep 2
-tmux send-keys -t :.1 Enter
-```
-
-## エラーハンドリング
-
-| 状況 | 症状 | 対応 |
-|------|------|------|
-| タイムアウト | capture出力が空/変化なし | 追加30-60秒待機、または `tmux send-keys -t :.1 Enter` で再プロンプト |
-| Cursor Agent 未応答 | プロンプトが表示されたまま | `tmux send-keys -t :.1 Enter` で再送信 |
-| ペイン消失 | `can't find pane` エラー | セットアップを再実行 |
-| 接続エラー | API エラーメッセージ | `cursor-agent` を再起動（ペイン終了→再作成） |
-
-### リカバリー手順
-
-```bash
-# ペインが消失した場合
-tmux split-window -h
-tmux send-keys "cursor-agent"
-tmux send-keys Enter
-sleep 5
-
-# Cursor Agent が固まった場合
-tmux send-keys -t :.1 C-c  # Ctrl+C で中断
-sleep 2
-tmux send-keys -t :.1 Enter  # 新しいプロンプト待ち
-```
-
+> **参照**: `skills/tmux-ai-chat/references/recovery-guide.md`

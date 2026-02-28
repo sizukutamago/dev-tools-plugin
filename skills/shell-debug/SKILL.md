@@ -1,6 +1,6 @@
 ---
 name: shell-debug
-description: Debug shell scripts and one-liners systematically (repro, isolate, observe, fix, verify). Focus on pipelines, quoting/expansion, tmux automation, git/CI scripting, and awk/sed text processing.
+description: Debug shell scripts and one-liners systematically (repro, isolate, observe, fix, verify). Use when the user is troubleshooting a broken shell script, pipeline, or one-liner that produces unexpected output or errors. Covers pipelines, quoting/expansion, tmux automation, git/CI scripting, and awk/sed text processing. Do NOT trigger for normal shell command usage or when simply writing new scripts without debugging issues.
 version: 1.0.0
 ---
 

@@ -1,6 +1,6 @@
 ---
 name: tmux-ai-chat
-description: Common tmux operations for AI chat integration. Provides split, send, capture, kill commands with marker-based output extraction. Use when building AI collaboration skills.
+description: "[INTERNAL] Common tmux operations for AI chat integration. Provides split, send, capture, kill commands with marker-based output extraction. This is an internal base skill used by codex-collab, cursor-collab, ai-research, and claude-collab. NOT user-invocable directly - other AI collaboration skills reference this as a dependency."
 version: 1.0.0
 ---
 

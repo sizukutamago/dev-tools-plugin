@@ -1,7 +1,7 @@
 ---
 name: claude-collab
 description: Autonomous multi-round debate between two Claude Code instances via tmux. Supports advocate/devil's-advocate, expert perspectives, and custom roles for design decisions, code review, debugging, and brainstorming. Use when user wants "Claude同士で議論", "ディベート", "多角的に検討", "debate", "pros and cons".
-version: 1.0.0
+version: 1.1.0
 ---
 
 # Claude Collab（Claude 対話ディベート）
@@ -140,42 +140,14 @@ mkdir -p "$COLLAB_TMPDIR" && chmod 700 "$COLLAB_TMPDIR"
 
 **Step 2: Role A の実行**
 
-出力をファイルにリダイレクトし、完了を done ファイルで検出する（マーカー方式は `claude -p` のような長時間コマンドでは不安定なため非推奨）:
+ファイルベースの実行パターンで `claude -p` を実行する。
 
-```bash
-# tmux ペインでコマンド実行（出力はファイルにリダイレクト、終了コードも記録）
-tmux send-keys -t "$pane" "env -u CLAUDECODE claude -p < \"$COLLAB_TMPDIR/roleA-round-${round}.txt\" > \"$COLLAB_TMPDIR/roleA-out-${round}.txt\" 2>&1; echo \$? > \"$COLLAB_TMPDIR/roleA-exit-${round}.txt\""
-```
-```bash
-tmux send-keys -t "$pane" Enter
-```
-```bash
-# 完了を待機（最大120秒、2秒間隔でポーリング）
-for i in $(seq 1 60); do
-  [ -f "$COLLAB_TMPDIR/roleA-exit-${round}.txt" ] && break
-  sleep 2
-done
-```
-```bash
-# タイムアウト判定
-if [ ! -f "$COLLAB_TMPDIR/roleA-exit-${round}.txt" ]; then
-  echo "TIMEOUT: Role A round ${round}"
-  # → リトライ1回（同じコマンドを再送信）。2回目も失敗なら "(タイムアウト)" として記録し次ラウンドへ
-fi
-```
-```bash
-# 終了コード判定 + 出力取得
-exit_code=$(cat "$COLLAB_TMPDIR/roleA-exit-${round}.txt" 2>/dev/null || echo "1")
-if [ "$exit_code" != "0" ]; then
-  response_a="(エラー: claude -p が終了コード ${exit_code} で失敗。出力: $(head -5 "$COLLAB_TMPDIR/roleA-out-${round}.txt" 2>/dev/null))"
-  # → リトライ1回。2回目も失敗なら上記のエラー内容をユーザーに表示し次ラウンドへ
-else
-  response_a=$(cat "$COLLAB_TMPDIR/roleA-out-${round}.txt" 2>/dev/null || echo "(応答なし)")
-fi
-rm -f "$COLLAB_TMPDIR/roleA-exit-${round}.txt"
-```
+> **参照**: `references/execution_pattern.md` の基本パターン（Step 2〜5）
 
-**重要**: `tmux send-keys` と `Enter` は別々の Bash 呼び出しで実行すること（codex-collab と同じ制約）。
+- プロンプト: `$COLLAB_TMPDIR/roleA-round-${round}.txt`
+- 出力: `$COLLAB_TMPDIR/roleA-out-${round}.txt`
+- 待機: 最大120秒、2秒間隔ポーリング
+- タイムアウト時: リトライ1回、失敗なら "(タイムアウト)" として記録
 
 **Step 3: Role A の応答をユーザーに表示**
 
@@ -193,16 +165,7 @@ Role A の応答を含めて `$COLLAB_TMPDIR/roleB-round-{round}.txt` に書き�
 
 **Step 5: Role B の実行**
 
-Step 2 と同じファイルベース方式で実行する。コマンドは以下の通り:
-
-```bash
-tmux send-keys -t "$pane" "env -u CLAUDECODE claude -p < \"$COLLAB_TMPDIR/roleB-round-${round}.txt\" > \"$COLLAB_TMPDIR/roleB-out-${round}.txt\" 2>&1; echo \$? > \"$COLLAB_TMPDIR/roleB-exit-${round}.txt\""
-```
-```bash
-tmux send-keys -t "$pane" Enter
-```
-
-完了待機・タイムアウト判定・終了コード判定は Step 2 と同一パターン（ファイル名は `roleB-*` に置換）。
+Step 2 と同じ実行パターン（ファイル名は `roleB-*` に置換）。
 
 **Step 6: Role B の応答をユーザーに表示**
 
@@ -270,36 +233,12 @@ tmux send-keys -t "$pane" Enter
 
 **Judge の実行**:
 
-```bash
-# tmux ペインで Judge 実行（出力はファイルにリダイレクト、終了コードも記録）
-tmux send-keys -t "$pane" "env -u CLAUDECODE claude -p < \"$COLLAB_TMPDIR/judge.txt\" > \"$COLLAB_TMPDIR/judge-out.txt\" 2>&1; echo \$? > \"$COLLAB_TMPDIR/judge-exit.txt\""
-```
-```bash
-tmux send-keys -t "$pane" Enter
-```
-```bash
-# 完了を待機（最大180秒、3秒間隔でポーリング）
-for i in $(seq 1 60); do
-  [ -f "$COLLAB_TMPDIR/judge-exit.txt" ] && break
-  sleep 3
-done
-```
-```bash
-# タイムアウト判定
-if [ ! -f "$COLLAB_TMPDIR/judge-exit.txt" ]; then
-  echo "TIMEOUT: Judge"
-  # → リトライ1回。2回目も失敗なら "(Judge タイムアウト)" としてユーザーに報告
-fi
-```
-```bash
-# 終了コード判定 + 出力取得
-exit_code=$(cat "$COLLAB_TMPDIR/judge-exit.txt" 2>/dev/null || echo "1")
-if [ "$exit_code" != "0" ]; then
-  judge_output="(エラー: Judge が終了コード ${exit_code} で失敗。出力: $(head -5 "$COLLAB_TMPDIR/judge-out.txt" 2>/dev/null))"
-else
-  judge_output=$(cat "$COLLAB_TMPDIR/judge-out.txt" 2>/dev/null || echo "(Judge 応答なし)")
-fi
-```
+同じファイルベースの実行パターン（`references/execution_pattern.md` 参照）。
+
+- プロンプト: `$COLLAB_TMPDIR/judge.txt`
+- 出力: `$COLLAB_TMPDIR/judge-out.txt`
+- 待機: 最大180秒、3秒間隔ポーリング
+- タイムアウト時: リトライ1回、失敗なら "(Judge タイムアウト)" としてユーザーに報告
 
 Judge の出力をユーザーに表示する。
 
@@ -420,3 +359,4 @@ AskUserQuestion で各ロールの名前と説明を入力してもらう。
 
 - `references/role_presets.md` - 10種のプリセットロール定義
 - `references/discussion_summary_template.md` - Judge 用サマリーテンプレート
+- `references/execution_pattern.md` - `claude -p` のファイルベース実行パターン

@@ -73,6 +73,13 @@ dev-tools-plugin/
 |--------|------|-----------|
 | ui-design-patterns | コンポーネント設計・レイアウト・アクセシビリティ | 「フォーム設計」「レイアウト作成」「a11y 対応」 |
 
+### 自動 Hook（常時稼働）
+
+| スキル | 説明 | フック |
+|--------|------|-------|
+| notify-hooks | macOS 通知（タスク完了・許可リクエスト） | Stop, Notification |
+| skill-forced-eval | スキル評価リマインダー注入 | UserPromptSubmit |
+
 ## コーディング規約
 
 ### 言語ポリシー

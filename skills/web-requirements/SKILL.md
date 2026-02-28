@@ -1,7 +1,7 @@
 ---
 name: web-requirements
-description: Generate user stories with Gherkin acceptance criteria using Swarm pattern for comprehensive requirements analysis. Triggers on "requirements", "user stories", "define requirements", "requirement analysis"
-version: 1.0.0
+description: Generate user stories with Gherkin acceptance criteria using Swarm pattern for comprehensive requirements analysis. Use when the user wants to define or analyze feature requirements, create user stories for web development, or plan new functionality with acceptance criteria. Triggers on phrases like "要件定義", "ユーザーストーリー", "define requirements", "user stories", "acceptance criteria". Do NOT trigger for package dependency requirements (requirements.txt, package.json) or infrastructure requirements.
+version: 1.1.0
 ---
 
 # Web 要件定義スキル
@@ -155,6 +155,8 @@ Web 開発の要件定義を支援する。**Swarm パターン**（並列エー
 - ユーザーが疲労サインを出した
 - 情報利得が低下した（同じ回答の繰り返し）
 
+> **参照**: 質問テンプレート詳細は `references/interview_questions.md`
+
 **出力**: `docs/requirements/.work/03_questions.md`
 
 **Done 条件**:
@@ -202,6 +204,8 @@ Web 開発の要件定義を支援する。**Swarm パターン**（並列エー
 3. Acceptance Criteria を Gherkin 形式（Given/When/Then）で記述
 4. 失敗系 AC を各 Story に最低 1 つ追加
 
+> **参照**: 出力フォーマット仕様は `references/user_stories_format.md`
+
 **出力**: `docs/requirements/user-stories.md`
 
 **Done 条件**:
@@ -232,6 +236,8 @@ Web 開発の要件定義を支援する。**Swarm パターン**（並列エー
    ```
 2. 各 Reviewer は担当観点のみをチェックし、指摘を重大度（P0/P1/P2）で分類
 3. **Aggregator 呼び出し**: 指摘を統合し、重複を排除
+
+> **参照**: 品質ルール（曖昧語リスト・P0 判定条件）は `references/quality_rules.md`
 
 **出力**:
 - `docs/requirements/.work/06_reviewer/*.md`（各 Reviewer の生出力）
@@ -297,63 +303,19 @@ Web 開発の要件定義を支援する。**Swarm パターン**（並列エー
 
 ## スコープ分割
 
-### 判定基準
+Phase 0 でスコープ分割が必要な場合の判定基準・ScopeManifest 形式:
 
-| 基準 | 閾値 | アクション |
-|------|------|-----------|
-| ファイル数 | > 150 | shard 分割必須 |
-| LOC | > 20,000 | shard 分割必須 |
-| 自然境界 | bounded context あり | 境界で分割 |
-| 依存密度 | 強結合クラスタ | 同一 shard に |
+> **参照**: `references/scope_manifest.md`
 
-### ScopeManifest 形式
-
-```json
-{
-  "mode": "greenfield | brownfield",
-  "total_files": 250,
-  "total_loc": 35000,
-  "shards": [
-    {
-      "id": "frontend",
-      "paths": ["src/frontend/**"],
-      "files": 120,
-      "loc": 18000
-    },
-    {
-      "id": "backend",
-      "paths": ["src/backend/**"],
-      "files": 130,
-      "loc": 17000
-    }
-  ]
-}
-```
+判定閾値: 150 ファイル or 20,000 LOC で shard 分割必須。
 
 ---
 
 ## ハンドオフ封筒
 
-> **ID 規約の注意**:
-> - **Task 呼び出し名**: frontmatter `name`（例: `webreq-explorer-tech`）を使用
-> - **封筒 agent_id**: 内部トラッキング用の安定ID（例: `explorer:tech#shard-frontend`）
-> - この2つは別物。agent_id は集計互換のため変更しない。
+エージェント間の契約スキーマ。Task 呼び出し名（frontmatter `name`）と封筒 `agent_id`（内部トラッキング用）は別物。
 
-エージェント間の契約として、以下のスキーマで出力を統一:
-
-```yaml
-kind: explorer | reviewer | planner | writer | aggregator
-agent_id: explorer:tech#shard-frontend
-mode: greenfield | brownfield
-status: ok | needs_input | conflict | blocked
-severity: null | P0 | P1 | P2  # Reviewer のみ
-artifacts:
-  - path: .work/01_explorer/tech.md
-    type: context | finding | question | story | review
-open_questions: [...]
-blockers: [...]
-next: explorer | interviewer | planner | writer | reviewer | aggregator | done
-```
+> **参照**: `references/handoff_schema.md`
 
 ---
 
