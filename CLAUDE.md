@@ -40,7 +40,7 @@ dev-tools-plugin/
 | スキル | 説明 | トリガー例 |
 |--------|------|-----------|
 | tmux-ai-chat | tmux ペイン経由の AI チャット基盤 | - |
-| ai-research | Gemini との調査・リサーチ | 「調査して」「リサーチして」 |
+| gemini-collab | Gemini との調査・リサーチ | 「調査して」「リサーチして」「Gemini と相談」 |
 | codex-collab | Codex との設計相談・レビュー | 「Codex と相談」「Codex にレビュー」 |
 | cursor-collab | Cursor Agent との設計相談・レビュー | 「Cursor と相談」「Cursor にレビュー」 |
 | claude-collab | Claude Code 同士の自律ディベート | 「Claude同士で議論」「ディベート」「多角的に検討」 |
@@ -49,10 +49,6 @@ dev-tools-plugin/
 
 | スキル | 説明 | トリガー例 |
 |--------|------|-----------|
-| biome | Biome (Linter/Formatter) 設定 | 「Biome 設定」「リンター設定」 |
-| dependency-cruiser | 依存関係・アーキテクチャ検証 | 「依存関係チェック」 |
-| shell-debug | シェルスクリプト・ワンライナーのデバッグ | 「シェルデバッグ」「awk エラー」 |
-| verified-commit | 検証（lint/test）付きコミット | 「検証コミット」「verified commit」 |
 
 ### プロンプト改善
 
@@ -61,24 +57,6 @@ dev-tools-plugin/
 | hurikaeri | セッション振り返り（AI-KPT + 反事実推論） | `/hurikaeri` |
 | prompt-improver | フィードバック収集・改善提案 | `/improve` |
 
-### 要件定義
-
-| スキル | 説明 | トリガー例 |
-|--------|------|-----------|
-| web-requirements | Swarm パターンで要件定義・ユーザーストーリー生成 | 「要件定義して」「ユーザーストーリー」 |
-
-### UI/デザイン
-
-| スキル | 説明 | トリガー例 |
-|--------|------|-----------|
-| ui-design-patterns | コンポーネント設計・レイアウト・アクセシビリティ | 「フォーム設計」「レイアウト作成」「a11y 対応」 |
-
-### 自動 Hook（常時稼働）
-
-| スキル | 説明 | フック |
-|--------|------|-------|
-| notify-hooks | macOS 通知（タスク完了・許可リクエスト） | Stop, Notification |
-| skill-forced-eval | スキル評価リマインダー注入 | UserPromptSubmit |
 
 ## コーディング規約
 

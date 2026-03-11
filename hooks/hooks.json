@@ -2,75 +2,33 @@
   "$schema": "https://raw.githubusercontent.com/anthropics/claude-code/main/schemas/hooks.json",
   "description": "Combined hooks for dev-tools-plugin",
   "hooks": {
-    "UserPromptSubmit": [
-      {
-        "matcher": "*",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/skills/skill-forced-eval/scripts/forced_eval_hook.sh\"",
-            "timeout": 5000
-          }
-        ]
-      }
-    ],
-    "PreToolUse": [
-      {
-        "matcher": "Write|Edit|MultiEdit",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/skills/web-requirements/scripts/hook_router.sh\" pre",
-            "timeout": 10000
-          }
-        ]
-      }
-    ],
-    "PostToolUse": [
-      {
-        "matcher": "Write|Edit|MultiEdit",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/skills/web-requirements/scripts/hook_router.sh\" post",
-            "timeout": 20000
-          }
-        ]
-      }
-    ],
     "Stop": [
       {
         "matcher": "*",
         "hooks": [
           {
             "type": "command",
-            "command": "test -f docs/requirements/user-stories.md && python3 \"${CLAUDE_PLUGIN_ROOT}/skills/web-requirements/scripts/validate_user_stories.py\" docs/requirements/user-stories.md --strict || true",
-            "timeout": 30000,
-            "onError": "warn"
-          },
-          {
-            "type": "command",
-            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/skills/notify-hooks/scripts/notify_stop.sh\"",
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/skills/hurikaeri/scripts/suggest_hurikaeri.sh\"",
             "timeout": 5000,
             "onError": "ignore"
           },
           {
             "type": "command",
-            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/skills/hurikaeri/scripts/suggest_hurikaeri.sh\"",
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/skills/prompt-improver/scripts/stop_hook_collect.sh\"",
             "timeout": 5000,
             "onError": "ignore"
           }
         ]
       }
     ],
-    "Notification": [
+    "SessionStart": [
       {
-        "matcher": "*",
+        "matcher": "",
         "hooks": [
           {
             "type": "command",
-            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/skills/notify-hooks/scripts/notify_notification.sh\"",
-            "timeout": 5000,
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/skills/obsidian-context/scripts/session-start.sh\"",
+            "timeout": 3000,
             "onError": "ignore"
           }
         ]

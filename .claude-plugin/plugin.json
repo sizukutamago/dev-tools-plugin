@@ -1,7 +1,7 @@
 {
   "name": "dev-tools-plugin",
-  "version": "3.0.0",
-  "description": "開発効率化ツール集。AI連携（Codex/Cursor/Gemini/Claude対話ディベート）、コード品質（Biome/dependency-cruiser）、要件定義（web-requirements）、セッション振り返り（hurikaeri）、Hooks（通知/スキル強制評価）、プロンプト改善を提供。",
+  "version": "4.0.0",
+  "description": "AI連携（Codex/Cursor/Gemini/Claude対話ディベート）、日課ワークフロー（morning/daily-log/quick-note/blog-draft）、セッション振り返り（hurikaeri）、プロンプト改善を提供。",
   "author": {
     "name": "sizukutamago"
   },
@@ -13,14 +13,10 @@
     "codex",
     "cursor",
     "gemini",
-    "biome",
-    "dependency-cruiser",
-    "prompt-improvement",
-    "requirements",
-    "user-stories",
     "claude-debate",
-    "hooks",
-    "notifications",
+    "obsidian",
+    "daily-workflow",
+    "prompt-improvement",
     "tmux",
     "japanese"
   ]
