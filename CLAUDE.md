@@ -44,6 +44,7 @@ dev-tools-plugin/
 | codex-collab | Codex との設計相談・レビュー | 「Codex と相談」「Codex にレビュー」 |
 | cursor-collab | Cursor Agent との設計相談・レビュー | 「Cursor と相談」「Cursor にレビュー」 |
 | claude-collab | Claude Code 同士の自律ディベート | 「Claude同士で議論」「ディベート」「多角的に検討」 |
+| deep-research | 自律型深層調査（並列サブエージェント） | `/deep-research`「徹底調査」「調査レポート作成」 |
 
 ### コード品質
 
