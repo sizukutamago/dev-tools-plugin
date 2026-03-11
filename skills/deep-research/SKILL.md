@@ -87,21 +87,20 @@ Phase 4: Output（保存・要約表示）
 
 #### 2a. Search（Researcher サブエージェント × N 並列）
 
-`agents/researcher.md` を Read し、各セクションに対して Agent tool で Researcher を **並列起動**する。
+各セクションに対して `deep-research-searcher` サブエージェントを **並列起動** する。
 
 **Agent tool 呼び出しパターン**:
 
 ```
-# agents/researcher.md の内容を Read
-researcher_prompt = Read("skills/deep-research/agents/researcher.md")
-
 # 各セクションを並列で起動（1つの応答で複数の Agent tool を呼び出す）
 Agent(
+  subagent_type: "deep-research-searcher",
   description: "Research: セクション名",
-  prompt: "{researcher_prompt}\n\n## 割り当て\n- セクション: {section_name}\n- クエリ: {queries}\n- イテレーション: {iteration}/{maxIterations}"
+  prompt: "## 割り当て\n- セクション: {section_name}\n- クエリ: {queries}\n- イテレーション: {iteration}/{maxIterations}"
 )
 ```
 
+- `deep-research-searcher` は `agents/researcher.md` で定義（tools: WebSearch, WebFetch のみ、model: sonnet）
 - 依存関係のないセクションは全て並列起動する
 - 各 Researcher は Findings を構造化して返す
 
@@ -128,21 +127,22 @@ Agent(
 
 ### Phase 3: Synthesis（Writer サブエージェント）
 
-`agents/writer.md` を Read し、Agent tool で Writer を起動する。
+`deep-research-writer` サブエージェントを起動する。
 
 **Agent tool 呼び出しパターン**:
 
 ```
-writer_prompt = Read("skills/deep-research/agents/writer.md")
 report_template = Read("skills/deep-research/references/report_template.md")
 
 Agent(
+  subagent_type: "deep-research-writer",
   description: "Write research report",
-  prompt: "{writer_prompt}\n\n## レポートテンプレート\n{report_template}\n\n## メタデータ\n- テーマ: {topic}\n- Date: {date}\n- Depth: {depth}\n- Iterations: {iterations}\n- Coverage: {coverage_score}%\n- Scope (In): {scope_in}\n- Scope (Out): {scope_out}\n\n## 全セクションの Findings\n{all_findings}\n\n## 分析結果\n{analysis}"
+  prompt: "## レポートテンプレート\n{report_template}\n\n## メタデータ\n- テーマ: {topic}\n- Date: {date}\n- Depth: {depth}\n- Iterations: {iterations}\n- Coverage: {coverage_score}%\n- Scope (In): {scope_in}\n- Scope (Out): {scope_out}\n\n## 全セクションの Findings\n{all_findings}\n\n## 分析結果\n{analysis}"
 )
 ```
 
-Writer はレポートのマークダウンテキストを返す。
+- `deep-research-writer` は `agents/writer.md` で定義（tools: なし、model: sonnet）
+- Writer はレポートのマークダウンテキストを返す。
 
 ### Phase 4: Output
 
