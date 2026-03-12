@@ -17,7 +17,7 @@ version: 1.0.0
 
 ```
 OBSIDIAN_VAULT=~/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian
-OUTPUT_DIR=$OBSIDIAN_VAULT/note
+OUTPUT_DIR=$OBSIDIAN_VAULT/news
 DATE=$(date +%Y-%m-%d)
 OUTPUT_FILE=$OUTPUT_DIR/$DATE-biz-news.md
 SOURCE_REGISTRY=~/.claude/projects/-Users-sizukutamago-workspace/memory/biz-news-sources.md
