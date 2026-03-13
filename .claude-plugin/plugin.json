@@ -1,7 +1,7 @@
 {
   "name": "dev-tools-plugin",
-  "version": "4.3.0",
-  "description": "AI連携（Codex/Cursor/Gemini/Claude対話ディベート/Deep Research）、日課ワークフロー（morning/daily-log/quick-note/blog-draft）、セッション振り返り（hurikaeri）、プロンプト改善を提供。",
+  "version": "4.5.0",
+  "description": "AI連携（Codex/Cursor/Gemini/Claude対話ディベート/Deep Research）、日課ワークフロー（morning/daily-log/quick-note/blog-draft）、対話型設定ウィザード（cc-settings）、課題深掘り（problem-shaping）、セッション振り返り（hurikaeri）、プロンプト改善を提供。",
   "author": {
     "name": "sizukutamago"
   },
