@@ -16,7 +16,7 @@ version: 1.2.0
 
 ## 出力ファイル
 
-- Obsidian: `~/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/note/YYYY-MM-DD-shaping-{slug}.md`
+- `{vault}/note/YYYY-MM-DD-shaping-{slug}.md`
 
 slug はテーマから英語キーワードを抽出して短くしたもの。
 
