@@ -7,24 +7,13 @@ Claude Code プラグインとして、開発効率化ツール集を提供す�
 ```
 dev-tools-plugin/
 ├── .claude-plugin/          # プラグインメタデータ
-├── commands/                # コマンド定義（3種）
-│   ├── improve.md
-│   ├── hurikaeri.md
-│   └── claude-collab.md
-├── skills/                  # スキル実装（13種）
+├── commands/                # コマンド定義
+│   └── hurikaeri.md
+├── skills/                  # スキル実装
 │   ├── tmux-ai-chat/       # tmux AI チャット基盤
-│   ├── ai-research/        # Gemini との調査連携
 │   ├── codex-collab/       # Codex との設計相談
-│   ├── cursor-collab/      # Cursor Agent との設計相談
-│   ├── claude-collab/      # Claude Code 対話ディベート
-│   ├── biome/              # Linting/Formatting 設定
-│   ├── dependency-cruiser/ # アーキテクチャ検証
 │   ├── hurikaeri/          # セッション振り返り（AI-KPT）
-│   ├── prompt-improver/    # プロンプト改善
-│   ├── shell-debug/        # シェルスクリプトデバッグ
-│   ├── ui-design-patterns/ # UI 設計パターン・アクセシビリティ
-│   ├── verified-commit/    # 検証付きコミット
-│   └── web-requirements/   # 要件定義（Swarm パターン）
+│   └── ...                 # ai-news / biz-news / daily-log / deep-research 等
 ├── scripts/                 # セットアップスクリプト
 │   └── setup-ai-collab.sh  # AI CLI 設定インストール
 ├── biome/                   # Biome 設定テンプレート
@@ -40,10 +29,7 @@ dev-tools-plugin/
 | スキル | 説明 | トリガー例 |
 |--------|------|-----------|
 | tmux-ai-chat | tmux ペイン経由の AI チャット基盤 | - |
-| gemini-collab | Gemini との調査・リサーチ | 「調査して」「リサーチして」「Gemini と相談」 |
 | codex-collab | Codex との設計相談・レビュー | 「Codex と相談」「Codex にレビュー」 |
-| cursor-collab | Cursor Agent との設計相談・レビュー | 「Cursor と相談」「Cursor にレビュー」 |
-| claude-collab | Claude Code 同士の自律ディベート | 「Claude同士で議論」「ディベート」「多角的に検討」 |
 | deep-research | 自律型深層調査（並列サブエージェント） | `/deep-research`「徹底調査」「調査レポート作成」 |
 
 ### コード品質
@@ -56,7 +42,6 @@ dev-tools-plugin/
 | スキル | 説明 | トリガー例 |
 |--------|------|-----------|
 | hurikaeri | セッション振り返り（AI-KPT + 反事実推論） | `/hurikaeri` |
-| prompt-improver | フィードバック収集・改善提案 | `/improve` |
 
 
 ## コーディング規約
@@ -112,7 +97,7 @@ Codex/Cursor/Gemini CLI が設定ファイルを読み込めるようにする:
 ## コマンド
 
 ```bash
-/improve          # プロンプト改善分析
+/hurikaeri        # セッション振り返り（AI-KPT）
 ```
 
 ## 変更時の注意
@@ -122,18 +107,6 @@ Codex/Cursor/Gemini CLI が設定ファイルを読み込めるようにする:
 1. `SKILL.md` の frontmatter description は英語で記述
 2. バージョン番号を適切に更新（セマンティックバージョニング）
 3. `references/` 配下のテンプレートとの整合性を確認
-
-## prompt-improver について
-
-Stop hook でタスク完了時のフィードバックを自動収集し、CLAUDE.md/SKILL の継続的改善を支援。
-
-```bash
-# フィードバック分析
-./scripts/analyze_feedback.sh --stats
-
-# 改善提案生成
-./scripts/generate_improvements.sh
-```
 
 ## web-requirements について
 
