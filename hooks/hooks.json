@@ -11,12 +11,6 @@
             "command": "bash \"${CLAUDE_PLUGIN_ROOT}/skills/hurikaeri/scripts/suggest_hurikaeri.sh\"",
             "timeout": 5000,
             "onError": "ignore"
-          },
-          {
-            "type": "command",
-            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/skills/prompt-improver/scripts/stop_hook_collect.sh\"",
-            "timeout": 5000,
-            "onError": "ignore"
           }
         ]
       }

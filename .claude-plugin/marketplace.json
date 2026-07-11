@@ -11,7 +11,7 @@
       "name": "dev-tools-plugin",
       "source": "./",
       "description": "開発効率化ツール集。AI連携（Codex/Deep Research）、AIニュース、日課ワークフロー、セッション振り返りを提供。",
-      "version": "5.0.0",
+      "version": "5.0.1",
       "category": "productivity",
       "tags": ["ai-collaboration", "code-quality", "japanese"]
     }

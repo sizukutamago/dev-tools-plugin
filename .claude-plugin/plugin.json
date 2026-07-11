@@ -1,6 +1,6 @@
 {
   "name": "dev-tools-plugin",
-  "version": "5.0.0",
+  "version": "5.0.1",
   "description": "AI連携（Codex/Deep Research）、AIニュース（ai-news/biz-news）、日課ワークフロー（daily-log/blog-draft）、対話型設定ウィザード（cc-settings）、課題深掘り（problem-shaping）、セッション振り返り（hurikaeri）を提供。",
   "author": {
     "name": "sizukutamago"
